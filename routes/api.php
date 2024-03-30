@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/example', function () {
     return response()->json([
-        'name' => 'John Doe',
+        'test' => 'John Doe',
         'email' => 'john@example.com'
     ]);
 });
