@@ -1,4 +1,5 @@
 CREATE DATABASE IF NOT EXISTS api_data_hub;
+DROP DATABASE IF EXISTS api_data_hub;
 
 USE api_data_hub;
 
