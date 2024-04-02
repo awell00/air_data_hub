@@ -1,7 +1,7 @@
-DROP DATABASE IF EXISTS api_data_hub;
-CREATE DATABASE IF NOT EXISTS api_data_hub;
+DROP DATABASE IF EXISTS air_data_hub;
+CREATE DATABASE IF NOT EXISTS air_data_hub;
 
-USE api_data_hub;
+USE air_data_hub;
 
 CREATE TABLE properties (
     id SERIAL PRIMARY KEY,
