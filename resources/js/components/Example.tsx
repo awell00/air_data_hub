@@ -199,8 +199,8 @@ const App: React.FC = () => {
     };
 
     return (
-        <div>
-            <div ref={mapContainer} style={{width: '400px', height: '400px'}}/>
+        <Container>
+            <Map ref={mapContainer} style={{width: '400px', height: '400px'}}/>
             <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="City"/>
             <button onClick={flyToLocation} style={{
                 display: 'block',
@@ -214,7 +214,7 @@ const App: React.FC = () => {
                 Fly
             </button>
             <Translate>{t('Welcome to React')}</Translate>
-        </div>
+        </Container>
     );
 }
 
@@ -238,4 +238,17 @@ const Translate = styled.h2`
     font-family: "Roboto", sans-serif;
     font-weight: 400;
     font-style: normal;
+`
+
+const Container = styled.div`
+    position: relative;
+    height: 100vh;
+`
+
+const Map = styled.div`
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 20px;
 `
