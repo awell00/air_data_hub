@@ -1,9 +1,8 @@
-.leaflet-container {
-    height: 600px;
-    width: 100%;
+.mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib {
+    display: none !important;
 }
 
-.leaflet-div-icon {
-    background: transparent;
-    border: none;
+
+input {
+    margin-top: 20px;
 }

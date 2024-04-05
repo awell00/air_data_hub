@@ -1,0 +1,157 @@
+Ref releve,Num capteur,Ville,Région,Date,Gaz,Type,Donnee (en ppm)
+57,1,Paris,Ile de France,2/1/2020,N2O,GES,3.3
+10025,2,Paris,Ile de France,3/1/2020,N2O,GES,3.25
+200384,35,Bordeaux,Nouvelle-Aquitaine,01/01/18,CO2 bio,GES,440
+1,11,Lyon,Auvergne-Rhône-Alpes,06/12/16,NH3,GRA,1.32
+2,12,Lyon,Auvergne-Rhône-Alpes,06/12/16,CO2 bio,GES,460
+3,13,Lyon,Auvergne-Rhône-Alpes,06/12/16,CH4,GES,1.85
+4,11,Lyon,Auvergne-Rhône-Alpes,07/21/16,NH3,GRA,1.35
+5,12,Lyon,Auvergne-Rhône-Alpes,07/21/16,CO2 bio,GES,453
+6,13,Lyon,Auvergne-Rhône-Alpes,07/21/16,CH4,GES,1.9
+7,11,Lyon,Auvergne-Rhône-Alpes,08/01/16,NH3,GRA,1.56
+8,12,Lyon,Auvergne-Rhône-Alpes,08/01/16,CO2 bio,GES,485
+9,13,Lyon,Auvergne-Rhône-Alpes,08/01/16,CH4,GES,1.83
+10,11,Lyon,Auvergne-Rhône-Alpes,04/05/17,NH3,GRA,1.12
+11,12,Lyon,Auvergne-Rhône-Alpes,04/05/17,CO2 bio,GES,492
+12,13,Lyon,Auvergne-Rhône-Alpes,04/05/17,CH4,GES,1.75
+13,21,Reims,Grand Est,06/01/16,CH4,GES,1.32
+14,22,Reims,Grand Est,06/01/16,NH3,GRA,1.26
+15,23,Reims,Grand Est,06/01/16,PFC,GES,0.0000895
+16,24,Reims,Grand Est,6/1/2016,HFC,GES,0.000206
+17,25,Reims,Grand Est,6/1/2016,SF6,GES,0.000009
+18,26,Reims,Grand Est,6/1/2016,CO2 bio,GES,458
+19,21,Reims,Grand Est,12/5/2016,CH4,GES,1.41
+20,22,Reims,Grand Est,12/5/2016,NH3,GRA,0.04
+21,23,Reims,Grand Est,12/5/2016,PFC,GES,0.0000956
+22,24,Reims,Grand Est,12/5/2016,HFC,GES,0.00025
+23,25,Reims,Grand Est,12/5/2016,SF6,GES,0.000008
+24,26,Reims,Grand Est,12/5/2016,CO2 bio,GES,432
+25,31,Nantes,Pays de la Loire,2/1/2017,CH4,GES,1.65
+26,32,Nantes,Pays de la Loire,2/1/2017,NH3,GRA,0.05
+27,33,Nantes,Pays de la Loire,2/1/2017,PFC,GES,0.0001
+28,34,Nantes,Pays de la Loire,2/1/2017,CO2 bio,GES,451
+29,31,Nantes,Pays de la Loire,3/1/2017,CH4,GES,1.71
+30,32,Nantes,Pays de la Loire,3/1/2017,NH3,GRA,0.045
+31,33,Nantes,Pays de la Loire,3/1/2017,PFC,GES,0.0000846
+32,34,Nantes,Pays de la Loire,3/1/2017,CO2 bio,GES,472
+33,31,Nantes,Pays de la Loire,4/1/2017,CH4,GES,1.68
+34,32,Nantes,Pays de la Loire,4/1/2017,NH3,GRA,0.042
+35,33,Nantes,Pays de la Loire,4/1/2017,PFC,GES,0.0000832
+36,34,Nantes,Pays de la Loire,4/1/2017,CO2 bio,GES,478
+37,35,Bordeaux,Nouvelle-Aquitaine,3/1/2016,CO2 bio,GES,485
+38,37,Bordeaux,Nouvelle-Aquitaine,3/1/2016,CO2 non bio,GES,560
+39,35,Bordeaux,Nouvelle-Aquitaine,4/1/2016,CO2 bio,GES,472
+40,37,Bordeaux,Nouvelle-Aquitaine,4/1/2016,CO2 non bio,GES,600
+41,35,Bordeaux,Nouvelle-Aquitaine,5/1/2016,CO2 bio,GES,470
+42,37,Bordeaux,Nouvelle-Aquitaine,5/1/2016,CO2 non bio,GES,595
+43,35,Bordeaux,Nouvelle-Aquitaine,6/1/2016,CO2 bio,GES,435
+44,37,Bordeaux,Nouvelle-Aquitaine,6/1/2016,CO2 non bio,GES,582
+45,35,Bordeaux,Nouvelle-Aquitaine,7/1/2016,CO2 bio,GES,442
+46,37,Bordeaux,Nouvelle-Aquitaine,7/1/2016,CO2 non bio,GES,520
+47,35,Bordeaux,Nouvelle-Aquitaine,8/1/2016,CO2 bio,GES,453
+48,37,Bordeaux,Nouvelle-Aquitaine,8/1/2016,CO2 non bio,GES,502
+49,35,Bordeaux,Nouvelle-Aquitaine,9/1/2016,CO2 bio,GES,457
+50,37,Bordeaux,Nouvelle-Aquitaine,9/1/2016,CO2 non bio,GES,531
+51,35,Bordeaux,Nouvelle-Aquitaine,10/1/2016,CO2 bio,GES,467
+52,37,Bordeaux,Nouvelle-Aquitaine,10/1/2016,CO2 non bio,GES,562
+53,35,Bordeaux,Nouvelle-Aquitaine,11/1/2016,CO2 bio,GES,472
+54,37,Bordeaux,Nouvelle-Aquitaine,11/1/2016,CO2 non bio,GES,580
+55,35,Bordeaux,Nouvelle-Aquitaine,12/1/2016,CO2 bio,GES,481
+56,37,Bordeaux,Nouvelle-Aquitaine,12/1/2016,CO2 non bio,GES,545
+57,35,Bordeaux,Nouvelle-Aquitaine,1/1/2017,CO2 bio,GES,462
+58,37,Bordeaux,Nouvelle-Aquitaine,1/1/2017,CO2 non bio,GES,587
+59,35,Bordeaux,Nouvelle-Aquitaine,2/1/2017,CO2 bio,GES,441
+60,37,Bordeaux,Nouvelle-Aquitaine,2/1/2017,CO2 non bio,GES,620
+Ref releve,Num capteur,Ville,Région,Date,Gaz,Type,Donnee (en ppm)
+61,38,Marseille,Provence-Alpes-Côte d'Azur,1/1/2020,N2O,GES,3.5
+62,38,Marseille,Provence-Alpes-Côte d'Azur,2/1/2020,N2O,GES,3.45
+63,40,Toulouse,Occitanie,3/1/2020,CO2 bio,GES,450
+64,41,Nice,Provence-Alpes-Côte d'Azur,4/1/2020,NH3,GRA,1.4
+65,42,Nice,Provence-Alpes-Côte d'Azur,5/1/2020,CO2 bio,GES,470
+66,41,Nice,Provence-Alpes-Côte d'Azur,6/1/2020,CH4,GES,1.95
+67,41,Nice,Provence-Alpes-Côte d'Azur,7/1/2020,NH3,GRA,1.45
+68,43,Nice,Provence-Alpes-Côte d'Azur,8/1/2020,CO2 bio,GES,463
+69,41,Nice,Provence-Alpes-Côte d'Azur,9/1/2020,CH4,GES,2
+70,42,Nice,Provence-Alpes-Côte d'Azur,10/1/2020,NH3,GRA,1.66
+71,44,Nice,Provence-Alpes-Côte d'Azur,11/1/2020,CO2 bio,GES,495
+72,41,Nice,Provence-Alpes-Côte d'Azur,12/1/2020,CH4,GES,1.93
+73,43,Nice,Provence-Alpes-Côte d'Azur,1/1/2021,NH3,GRA,1.22
+74,42,Nice,Provence-Alpes-Côte d'Azur,2/1/2021,CO2 bio,GES,502
+75,41,Nice,Provence-Alpes-Côte d'Azur,3/1/2021,CH4,GES,1.85
+76,45,Strasbourg,Grand Est,4/1/2021,CH4,GES,1.42
+77,46,Strasbourg,Grand Est,5/1/2021,NH3,GRA,1.36
+78,45,Strasbourg,Grand Est,6/1/2021,PFC,GES,0.0000995
+79,45,Strasbourg,Grand Est,7/1/2021,HFC,GES,0.000216
+80,47,Strasbourg,Grand Est,8/1/2021,SF6,GES,0.000019
+81,46,Strasbourg,Grand Est,9/1/2021,CO2 bio,GES,468
+82,45,Strasbourg,Grand Est,10/1/2021,CH4,GES,1.51
+83,46,Strasbourg,Grand Est,11/1/2021,NH3,GRA,0.14
+84,46,Strasbourg,Grand Est,12/1/2021,PFC,GES,0.0001056
+85,48,Strasbourg,Grand Est,1/1/2022,HFC,GES,0.00026
+86,46,Strasbourg,Grand Est,2/1/2022,SF6,GES,0.000018
+87,47,Strasbourg,Grand Est,3/1/2022,CO2 bio,GES,442
+88,49,Lille,Hauts-de-France,4/1/2022,CH4,GES,1.75
+89,48,Lille,Hauts-de-France,5/1/2022,NH3,GRA,0.15
+90,49,Lille,Hauts-de-France,6/1/2022,PFC,GES,0.00011
+91,50,Lille,Hauts-de-France,7/1/2022,CO2 bio,GES,461
+92,50,Lille,Hauts-de-France,8/1/2022,CH4,GES,1.81
+93,51,Lille,Hauts-de-France,9/1/2022,NH3,GRA,0.145
+94,48,Lille,Hauts-de-France,10/1/2022,PFC,GES,0.0000946
+95,48,Lille,Hauts-de-France,11/1/2022,CO2 bio,GES,482
+96,51,Lille,Hauts-de-France,12/1/2022,CH4,GES,1.78
+97,51,Lille,Hauts-de-France,1/1/2023,NH3,GRA,0.142
+98,49,Lille,Hauts-de-France,2/1/2023,PFC,GES,0.0000932
+99,48,Lille,Hauts-de-France,3/1/2023,CO2 bio,GES,488
+100,50,Lille,Hauts-de-France,4/1/2023,CO2 non bio,GES,570
+101,51,Lille,Hauts-de-France,5/1/2023,CO2 bio,GES,482
+102,50,Lille,Hauts-de-France,6/1/2023,CO2 non bio,GES,610
+103,48,Lille,Hauts-de-France,7/1/2023,CO2 bio,GES,472
+104,49,Lille,Hauts-de-France,8/1/2023,CO2 non bio,GES,605
+105,49,Lille,Hauts-de-France,9/1/2023,CO2 bio,GES,445
+106,52,Lille,Hauts-de-France,10/1/2023,CO2 non bio,GES,592
+107,52,Lille,Hauts-de-France,11/1/2023,CO2 bio,GES,452
+108,48,Lille,Hauts-de-France,12/1/2023,CO2 non bio,GES,530
+109,49,Lille,Hauts-de-France,1/1/2024,CO2 bio,GES,463
+110,50,Lille,Hauts-de-France,2/1/2024,CO2 non bio,GES,512
+111,52,Rennes,Bretagne,1/1/2020,N2O,GES,3.6
+112,52,Rennes,Bretagne,2/1/2020,N2O,GES,3.55
+113,53,Le Havre,Normandie,3/1/2020,CO2 bio,GES,460
+114,54,Cergy,Île-de-France,4/1/2020,NH3,GRA,1.5
+115,54,Cergy,Île-de-France,5/1/2020,CO2 bio,GES,480
+116,55,Cergy,Île-de-France,6/1/2020,CH4,GES,2.05
+117,54,Cergy,Île-de-France,7/1/2020,NH3,GRA,1.55
+118,56,Cergy,Île-de-France,8/1/2020,CO2 bio,GES,473
+119,55,Cergy,Île-de-France,9/1/2020,CH4,GES,2.1
+120,54,Cergy,Île-de-France,10/1/2020,NH3,GRA,1.76
+121,56,Cergy,Île-de-France,11/1/2020,CO2 bio,GES,505
+122,56,Cergy,Île-de-France,12/1/2020,CH4,GES,2.03
+123,54,Cergy,Île-de-France,1/1/2021,NH3,GRA,1.32
+124,56,Cergy,Île-de-France,2/1/2021,CO2 bio,GES,512
+125,55,Cergy,Île-de-France,3/1/2021,CH4,GES,1.95
+126,57,Dijon,Bourgogne-Franche-Comté,4/1/2021,CH4,GES,1.52
+127,57,Dijon,Bourgogne-Franche-Comté,5/1/2021,NH3,GRA,1.46
+128,58,Dijon,Bourgogne-Franche-Comté,6/1/2021,PFC,GES,0.0001095
+129,57,Dijon,Bourgogne-Franche-Comté,7/1/2021,HFC,GES,0.000226
+130,59,Dijon,Bourgogne-Franche-Comté,8/1/2021,SF6,GES,0.000029
+131,60,Dijon,Bourgogne-Franche-Comté,9/1/2021,CO2 bio,GES,478
+132,60,Dijon,Bourgogne-Franche-Comté,10/1/2021,CH4,GES,1.61
+133,57,Dijon,Bourgogne-Franche-Comté,11/1/2021,NH3,GRA,0.24
+134,58,Dijon,Bourgogne-Franche-Comté,12/1/2021,PFC,GES,0.0001156
+135,60,Dijon,Bourgogne-Franche-Comté,1/1/2022,HFC,GES,0.00027
+136,59,Dijon,Bourgogne-Franche-Comté,2/1/2022,SF6,GES,0.000028
+137,57,Dijon,Bourgogne-Franche-Comté,3/1/2022,CO2 bio,GES,452
+138,61,Angers,Pays de la Loire,4/1/2022,CH4,GES,1.85
+139,62,Angers,Pays de la Loire,5/1/2022,NH3,GRA,0.25
+140,61,Angers,Pays de la Loire,6/1/2022,PFC,GES,0.00012
+141,61,Angers,Pays de la Loire,7/1/2022,CO2 bio,GES,471
+142,63,Angers,Pays de la Loire,8/1/2022,CH4,GES,1.91
+143,64,Angers,Pays de la Loire,9/1/2022,NH3,GRA,0.155
+144,61,Angers,Pays de la Loire,10/1/2022,PFC,GES,0.0001046
+145,62,Angers,Pays de la Loire,11/1/2022,CO2 bio,GES,492
+154,61,Angers,Pays de la Loire,8/1/2023,CO2 non bio,GES,615
+155,63,Angers,Pays de la Loire,9/1/2023,CO2 bio,GES,455
+156,64,Angers,Pays de la Loire,10/1/2023,CO2 non bio,GES,602
+157,64,Angers,Pays de la Loire,11/1/2023,CO2 bio,GES,462
+158,62,Angers,Pays de la Loire,12/1/2023,CO2 non bio,GES,540
+159,61,Angers,Pays de la Loire,1/1/2024,CO2 bio,GES,473
+160,62,Angers,Pays de la Loire,2/1/2024,CO2 non bio,GES,522
