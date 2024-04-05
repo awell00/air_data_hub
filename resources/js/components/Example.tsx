@@ -34,11 +34,11 @@ const App: React.FC = () => {
                 const ip = data.ip;
 
                 // Fetch the geolocation data
-                fetch(`http://ip-api.com/json/${ip}`)
+                fetch(`https://ipapi.co/${ip}/json`)
                     .then(response => response.json())
                     .then(data => {
-                        const lat = data.lat;
-                        const lon = data.lon;
+                        const lat = parseFloat(data.latitude);
+                        const lon = parseFloat(data.longitude);
 
 
                         mapboxgl.accessToken = 'pk.eyJ1Ijoicm9iaW5zaG9vZCIsImEiOiJjbHVsOG1vcTUwaGt1Mmlsd2h3dTM0ZzFvIn0.W-MBSYBmX_D_AqpOUoRAcA';
@@ -108,44 +108,51 @@ const App: React.FC = () => {
 
                                     if (map.current) {
                                         // Add the points as a source
-                                        map.current.addSource('points', {
-                                            type: 'geojson',
-                                            data: geojson
-                                        });
-
+                                        if (!map.current.getSource('points')) {
+                                            map.current.addSource('points', {
+                                                type: 'geojson',
+                                                data: geojson
+                                            });
+                                        }
                                         // Add a layer to display the points
-                                        map.current.addLayer({
-                                            id: 'points',
-                                            type: 'circle',
-                                            source: 'points',
-                                            paint: {
-                                                'circle-radius': [
-                                                    'interpolate',
-                                                    ['linear'],
-                                                    ['zoom'],
-                                                    2,1,
-                                                    3, 2,
-                                                    4, 5,
-                                                    5, 10,
-                                                    6, 15,
-                                                    7, 20,
-                                                    8, 30,
-                                                    9, 40,
-                                                    10, 60,
-                                                    11, 100,
-                                                    12, 200,
-                                                    13, 300,
-                                                    14, 400,
-                                                    15, 500,
-                                                    16, 700,
-                                                ],
-                                                'circle-color': '#007cbf'
-                                            }
-                                        });
+                                        if (!map.current.getLayer('points')) {
+                                            map.current.addLayer({
+                                                id: 'points',
+                                                type: 'circle',
+                                                source: 'points',
+                                                paint: {
+                                                    'circle-radius': [
+                                                        'interpolate',
+                                                        ['linear'],
+                                                        ['zoom'],
+                                                        2,1,
+                                                        3, 2,
+                                                        4, 5,
+                                                        5, 10,
+                                                        6, 15,
+                                                        7, 20,
+                                                        8, 30,
+                                                        9, 40,
+                                                        10, 60,
+                                                        11, 100,
+                                                        12, 200,
+                                                        13, 300,
+                                                        14, 400,
+                                                        15, 500,
+                                                        16, 700,
+                                                    ],
+                                                    'circle-color': '#007cbf'
+                                                }
+                                            });
+                                        }
                                     }
                                 });
                             }
                         }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching IP info:', error);
+                        // Handle the error in a way that makes sense for your application
                     });
             });
 
