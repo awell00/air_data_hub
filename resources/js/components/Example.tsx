@@ -22,6 +22,30 @@ const App: React.FC = () => {
     const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
 
     useEffect(() => {
+        const handleResize = () => {
+            if (map.current) {
+                // Adjust the size of the map
+                const width = window.innerWidth * 0.8; // 80% of window width
+                const height = window.innerHeight * 0.8; // 80% of window height
+                map.current.resize(); // This will make Mapbox GL JS update the map's size
+
+                let divisor = 250;
+                if (window.innerWidth <= 1400) {
+                    divisor = 380; // Adjust this value as needed
+                } else if (window.innerWidth <= 600) {
+                    divisor = 400; // Adjust this value as needed
+                }
+
+                // Adjust the zoom level
+                const zoom = Math.min(width, height) / divisor;
+                console.log(zoom)
+                map.current.setZoom(zoom);
+            }
+        };
+
+
+        window.addEventListener('resize', handleResize);
+
         const fetchData = async () => {
             if (!mapContainer.current) return;
 
@@ -63,6 +87,8 @@ const App: React.FC = () => {
                                 });
 
                             }
+
+                            handleResize();
 
                             /*setTimeout(() => {
                                 if (map.current) {
@@ -157,31 +183,6 @@ const App: React.FC = () => {
 
         fetchData();
 
-        const handleResize = () => {
-            if (map.current) {
-                // Adjust the size of the map
-                const width = window.innerWidth * 0.8; // 80% of window width
-                const height = window.innerHeight * 0.8; // 80% of window height
-                map.current.resize(); // This will make Mapbox GL JS update the map's size
-
-                let divisor = 250;
-                if (window.innerWidth <= 1400) {
-                    divisor = 380; // Adjust this value as needed
-                } else if (window.innerWidth <= 600) {
-                    divisor = 430; // Adjust this value as needed
-                }
-
-                // Adjust the zoom level
-                const zoom = Math.min(width, height) / divisor;
-                console.log(zoom)
-                map.current.setZoom(zoom);
-            }
-        };
-
-        handleResize();
-        window.addEventListener('resize', handleResize);
-
-
         return () => {
             window.removeEventListener('resize', handleResize);
 
@@ -273,7 +274,7 @@ const Title = styled.h1`
 
     @media (max-width: 600px) {
         font-size: 7.5vw;
-        letter-spacing: 1.8vw;
+        letter-spacing: 1.5vw;
     }
 
 `
