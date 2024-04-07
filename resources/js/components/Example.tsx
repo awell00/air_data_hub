@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from "react-dom/client";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import '../../css/app.css';
@@ -19,12 +19,7 @@ const App: React.FC = () => {
     const map = useRef<mapboxgl.Map | null>(null);
     const [center, setCenter] = useState<Coordinate | undefined>();
     const { t } = useTranslation();
-
-    useEffect(() => {
-        const userLang = navigator.language || navigator.language;
-        const language = userLang.startsWith('fr') ? 'fr' : 'en'; // Default to 'en' if the user's language is not 'fr'
-        i18n.changeLanguage(language);
-    }, [i18n]);
+    const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -51,9 +46,9 @@ const App: React.FC = () => {
                 if (mapContainer.current) {
                     map.current = new mapboxgl.Map({
                         container: mapContainer.current,
-                        style: 'mapbox://styles/mapbox/streets-v12',
+                        style: 'mapbox://styles/mapbox/standard',
                         center: [lon, lat],
-                        zoom: 1
+                        zoom: 1.7
                     });
 
                     if (map.current) {
@@ -63,11 +58,13 @@ const App: React.FC = () => {
                                     color: 'rgb(186, 210, 235)',
                                     'high-color': 'rgb(36, 92, 223)',
                                     'horizon-blend': 0.002,
-                                    'space-color': 'rgb(255,255,255)',
+                                    'space-color': 'rgb(11,11,25)',
+                                    "star-intensity": 0
                                 });
+
                             }
 
-                            setTimeout(() => {
+                            /*setTimeout(() => {
                                 if (map.current) {
                                     map.current.flyTo({
                                         center: [lon, lat],
@@ -75,7 +72,7 @@ const App: React.FC = () => {
                                         essential: true
                                     });
                                 }
-                            }, 2000);
+                            }, 2000);*/
 
                             const coordinates = [
                                 [-0.580816, 44.836151],
@@ -149,6 +146,7 @@ const App: React.FC = () => {
                                 }
                             }
                         });
+
                     }
                 }
             } catch (error) {
@@ -156,9 +154,37 @@ const App: React.FC = () => {
             }
         }
 
+
         fetchData();
 
+        const handleResize = () => {
+            if (map.current) {
+                // Adjust the size of the map
+                const width = window.innerWidth * 0.8; // 80% of window width
+                const height = window.innerHeight * 0.8; // 80% of window height
+                map.current.resize(); // This will make Mapbox GL JS update the map's size
+
+                let divisor = 250;
+                if (window.innerWidth <= 1400) {
+                    divisor = 380; // Adjust this value as needed
+                } else if (window.innerWidth <= 600) {
+                    divisor = 430; // Adjust this value as needed
+                }
+
+                // Adjust the zoom level
+                const zoom = Math.min(width, height) / divisor;
+                console.log(zoom)
+                map.current.setZoom(zoom);
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+
         return () => {
+            window.removeEventListener('resize', handleResize);
+
             if (map.current) {
                 map.current.remove();
             }
@@ -200,9 +226,10 @@ const App: React.FC = () => {
 
     return (
         <Container>
-            <Map ref={mapContainer} style={{width: '400px', height: '400px'}}/>
-            <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="City"/>
-            <button onClick={flyToLocation} style={{
+            <Title>AIR DATA HUB</Title>
+            <Map ref={mapContainer} />
+            {/*<input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="City"/>*/}
+            {/*<button onClick={flyToLocation} style={{
                 display: 'block',
                 margin: '20px auto',
                 padding: '10px',
@@ -212,8 +239,8 @@ const App: React.FC = () => {
                 borderRadius: '3px'
             }}>
                 Fly
-            </button>
-            <Translate>{t('Welcome to React')}</Translate>
+            </button>*/}
+            {/*<Translate>{t('Welcome to React')}</Translate>*/}
         </Container>
     );
 }
@@ -234,21 +261,46 @@ const renderApp = () => {
 // Wait for the DOM to load before rendering the app
 document.addEventListener('DOMContentLoaded', renderApp);
 
+const Title = styled.h1`
+    font-size: 8.6vw;
+    font-family: "ArchivoBlack-Regular", sans-serif;
+    letter-spacing: 1.8vw;
+    color: aliceblue;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+
+    @media (max-width: 600px) {
+        font-size: 7.5vw;
+        letter-spacing: 1.8vw;
+    }
+
+`
+
 const Translate = styled.h2`
-    font-family: "Roboto", sans-serif;
-    font-weight: 400;
-    font-style: normal;
+    font-family: "ArchivoBlack-Regular", sans-serif;
 `
 
 const Container = styled.div`
+    background: rgba(11, 11, 25);
     position: relative;
     height: 100vh;
 `
 
 const Map = styled.div`
+    width: 80vmin;
+    height: 80vmin;
     position: absolute;
-    right: 0;
+    right: 30px;
     top: 50%;
     transform: translateY(-50%);
-    border-radius: 20px;
+    border-radius: 0px;
+    z-index: 0;
+
+    @media (max-width: 1260px) {
+        left: 0;
+        right: 0;
+        margin: auto;
+    }
 `
