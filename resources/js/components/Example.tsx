@@ -75,7 +75,7 @@ const App: React.FC = () => {
                 });
 
                 map.current.on('load', () => {
-                    map.current?.on('zoom', () => {
+                    /*map.current?.on('zoom', () => {
                         if (map.current) {
 
                             if (map.current.getZoom() > zoomValue * 1.5) {
@@ -87,7 +87,7 @@ const App: React.FC = () => {
                                 }
                             }
                         }
-                    });
+                    });*/
 
                     if (map.current) {
                         map.current.setFog({
@@ -273,8 +273,8 @@ const Title = styled.h1`
     text-align: center;
     position: relative;
     z-index: 1;
-    text-shadow: 0px 0px 3px rgb(36, 92, 223), // Existing shadow
-    0px 0px 6px #BAD2EBFF;
+    text-shadow: 0px 0px 0.22vw rgb(36, 92, 223), // Existing shadow
+    0px 0px 0.43vw #BAD2EBFF;
 
     @media (max-width: 600px) {
         font-size: 7.5vw;
@@ -297,7 +297,7 @@ const Map = styled.div`
     width: 80vmin;
     height: 80vmin;
     position: absolute;
-    right: 30px;
+    right: 2.1vw;
     top: 50%;
     transform: translateY(-50%);
     border-radius: 20px;
@@ -310,6 +310,6 @@ const Map = styled.div`
     }
 
     @media (max-width: 500px) {
-        top: 40%;
+        top: 50%;
     }
 `
