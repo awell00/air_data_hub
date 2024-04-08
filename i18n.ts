@@ -1,22 +1,24 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+const browserLang = navigator.language.split('-')[0];
+
 i18n
     .use(initReactI18next)
     .init({
         resources: {
             en: {
                 translation: {
-                    "Welcome to React": "Welcome to React and react-i18next"
+                    "FROM DATA-X": "FROM DATA-X"
                 }
             },
             fr: {
                 translation: {
-                    "Welcome to React": "Bienvenue à React et react-i18next"
+                    "FROM DATA-X": "PAR DATA-X"
                 }
             }
         },
-        lng: "en",
+        lng: browserLang,
         fallbackLng: "en",
         interpolation: {
             escapeValue: false

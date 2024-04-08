@@ -29,6 +29,11 @@ const App: React.FC = () => {
     const timeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
+        const browserLang = navigator.language.split('-')[0];
+        i18n.changeLanguage(browserLang);
+    }, []);
+
+    useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth * 0.8;
             const height = window.innerHeight * 0.8;
@@ -353,7 +358,7 @@ const App: React.FC = () => {
         <Container>
             <AllTitle>
                 <Title className="my-text" ref={titleRef}>AIR DATA HUB</Title>
-                <Title2 className="my-text">FROM DATA-X</Title2>
+                <Title2 className="my-text">{t('FROM DATA-X')}</Title2>
                 <InputCity type="text" className="my-text2" value={city} onChange={e => setCity(e.target.value)}
                            onKeyPress={handleKeyPress} placeholder="Search a City"/>
                 {/*<button onClick={handleStyleChange}>Change Map Style</button>*/}
@@ -399,8 +404,10 @@ const Title = styled.h1`
     color: #EEEEEEFF;
     padding-left: 30px;
     padding-top: 30px;
+    white-space: nowrap;
 
-    @media (max-width: 650px) {
+
+    @media (max-width: 600px) {
         font-size: 8vw;
     }
 `
@@ -413,11 +420,9 @@ const Title2 = styled.h2`
     color: #EEEEEEFF;
     padding-left: 30px;
 
-    @media (max-width: 650px) {
+    @media (max-width: 600px) {
         font-size: 3vw;
     }
-
-
 `
 
 const TestButton = styled.button`
@@ -435,7 +440,7 @@ const InputCity = styled.input`
     display: block;
     padding-left: 30px;
     margin: 30px;
-    margin-right: 10%;
+    margin-right: 8%;
     padding: 10px;
     background: rgb(255, 255, 255);
     color: #0b0b19;
@@ -445,9 +450,14 @@ const InputCity = styled.input`
     font-size: 16px;
     font-family: "Montserrat", sans-serif;
 
-    @media (max-width: 768px) {
+    @media (max-width: 600px) {
         font-size: 14px;
-        margin-right: 5%;
+        margin-right: 3%;
+    }
+
+    @media (max-width: 400px) {
+        font-size: 12px;
+        margin-right: 3%;
     }
 `;
 
