@@ -1,6 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
 @font-face {
     font-family: 'ArchivoBlack-Regular';
     src: url('../../fonts/ArchivoBlack-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.my-text, .my-text2 {
+    transition: color 1s ease;
+}
+
+.my-text2 {
+    transition: background-color 1s ease;
+}
+
+@font-face {
+    font-family: 'Aileron-SemiBold';
+    src: url('../../fonts/Aileron-SemiBold.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
 }

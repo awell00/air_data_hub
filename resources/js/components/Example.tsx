@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useLayoutEffect, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from "react-dom/client";
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import '../../css/app.css';
 import Radar from 'radar-sdk-js';
 import 'radar-sdk-js/dist/radar.css';
 import mapboxgl from 'mapbox-gl';
+import { LngLat } from 'mapbox-gl';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import styled from 'styled-components';
@@ -25,6 +25,8 @@ const App: React.FC = () => {
     const [styleChangedOnce, setStyleChangedOnce] = useState(false);
     const [zoomValue, setZoom] = useState<Zoom>(3);
     const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/standard');
+    const titleRef = useRef<HTMLHeadingElement | null>(null); // Add this line
+    const timeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -32,7 +34,7 @@ const App: React.FC = () => {
             const height = window.innerHeight * 0.8;
             map.current?.resize();
 
-            let divisor = 250;
+            let divisor = 1100;
             if (window.innerWidth <= 600) {
                 divisor = 400;
             } else if (window.innerWidth <= 1400) {
@@ -95,7 +97,7 @@ const App: React.FC = () => {
                             'high-color': 'rgb(36, 92, 223)',
                             'horizon-blend': 0.006,
                             'space-color': 'rgb(11,11,25)',
-                            "star-intensity": 0
+                            "star-intensity": 0.23
                         });
 
                     }
@@ -196,6 +198,62 @@ const App: React.FC = () => {
         };
     }, [styleChanged, styleChangedOnce, zoomValue]);
 
+    const textElements = document.getElementsByClassName('my-text');
+    const textElement = document.getElementsByClassName('my-text2')[0] as HTMLElement;
+
+// The radius of the globe in degrees
+    const zoomTest = 0.001678693092394923;
+
+    map.current?.on('move', () => {
+        const latitude = map.current?.getCenter().lat;
+        const zoom = map.current?.getZoom();
+        if (latitude && zoom) {
+            const scale = 256 * 0.5 / Math.PI * Math.pow(2, zoom);
+            const metersPerPixel = Math.cos(latitude * Math.PI / 180) / scale;
+            if (metersPerPixel) {
+                if (metersPerPixel > zoomTest) {
+                    for (let i = 0; i < textElements.length; i++) {
+                        const element = textElements[i];
+                        const element2 = textElement;
+                        if (element instanceof HTMLElement) { // Check if the element is an HTMLElement (and not SVGElement for example)
+                            element.style.color = 'white'; // Or any other style changes you want to make
+                            element2.style.background = "white";
+                            element2.style.color = "#0B0B19FF";
+
+                            let style = document.createElement('style');
+                            style.innerHTML = `
+                            .my-text2::placeholder {
+                                color: #575757FF;
+                            }`;
+                            document.head.appendChild(style);
+                        }
+                    }
+                } else {
+                    for (let i = 0; i < textElements.length; i++) {
+                        const element = textElements[i];
+                        const element2 = textElement;
+                        if (element instanceof HTMLElement) {
+                            element.style.color = "#0B0B19FF";
+                            element2.style.background = "#0B0B19FF";
+                            element2.style.color = "white";
+                            let style = document.createElement('style');
+                            style.innerHTML = `
+                            .my-text2::placeholder {
+                                color: #EEEEEEFF;
+                            }`;
+                            document.head.appendChild(style);
+                        }
+                    }
+                }
+            }
+        }
+
+
+    });
+
+
+
+
     const [city, setCity] = useState('');
     const [lat, setLat] = useState(0);
     const [lng, setLng] = useState(0);
@@ -216,33 +274,78 @@ const App: React.FC = () => {
                 .catch((err) => {
                     // handle error
                 });
+
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+
+            // Set a new timeout
+            timeoutRef.current = setTimeout(() => {
+                flyToLocation(8);
+            }, 4000);
         }
     }, [city]);
 
-    const flyToLocation = () => {
+    const flyToLocation = (zoomFly: number) => {
         map.current?.flyTo({
             center: [lng, lat],
             essential: true,
-            zoom: 8
+            zoom: zoomFly
         });
+    };
+
+    useEffect(() => {
+        if (city === '') {
+            setLat(lat); // replace with the latitude of the initial location
+            setLng(lng); // replace with the longitude of the initial location
+            timeoutRef.current = window.setTimeout(() => {
+                flyToLocation(1.7);
+            }, 500);
+        } else if (lat && lng) {
+            timeoutRef.current = window.setTimeout(() => {
+                flyToLocation(8);
+            }, 4000);
+        }
+
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [lat, lng]);
+
+    const handleTest = (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            // Clear the timeout
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+
+            setTimeout(() => {
+                flyToLocation(8);
+            }, 2500);
+
+        }
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent<Element>) => {
+        if (e.key === "Enter") {
+            handleTest(e);
+        }
     };
 
     return (
         <Container>
-            <Title>AIR DATA HUB</Title>
-            <Map ref={mapContainer} />
-            {/*<input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="City"/>*/}
-            {/*<button onClick={flyToLocation} style={{
-                display: 'block',
-                margin: '20px auto',
-                padding: '10px',
-                background: '#ee8a65',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '3px'
-            }}>
+            <AllTitle>
+                <Title className="my-text" ref={titleRef}>AIR DATA HUB</Title>
+                <Title2 className="my-text">FROM DATA-X</Title2>
+                <InputCity type="text" className="my-text2" value={city} onChange={e => setCity(e.target.value)} onKeyPress={handleKeyPress} placeholder="Search a City"/>
+            </AllTitle>
+
+            <Map ref={mapContainer}/>
+            {/*<TestButton onClick={flyToLocation}>
                 Fly
-            </button>*/}
+            </TestButton>*/}
             {/*<Translate>{t('Welcome to React')}</Translate>*/}
         </Container>
     );
@@ -264,17 +367,22 @@ const renderApp = () => {
 // Wait for the DOM to load before rendering the app
 document.addEventListener('DOMContentLoaded', renderApp);
 
-const Title = styled.h1`
-    font-size: 8.6vw;
-    font-family: "ArchivoBlack-Regular", sans-serif;
-    letter-spacing: 1.8vw;
-    color: #ffffff;
-    padding: 30px;
-    text-align: center;
-    position: relative;
+const AllTitle = styled.div`
+    display: flex;
+    flex-direction: column;
+    position: absolute;
     z-index: 1;
-    text-shadow: 0px 0px 0.22vw rgb(36, 92, 223), // Existing shadow
-    0px 0px 0.43vw #BAD2EBFF;
+`
+
+const Title = styled.h1`
+    font-size: 4vw;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 800;
+   /* letter-spacing: .5vw;*/
+    color: #EEEEEEFF;
+    padding-left: 30px;
+    padding-top: 30px;
+
 
     @media (max-width: 600px) {
         font-size: 7.5vw;
@@ -283,33 +391,62 @@ const Title = styled.h1`
 
 `
 
+const Title2 = styled.h2`
+    font-size: 1.5vw;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+    /* letter-spacing: .5vw;*/
+    color: #EEEEEEFF;
+    padding-left: 30px;
+
+`
+
+const TestButton = styled.button`
+    display: 'block';
+    margin: '20px auto';
+    padding: '10px';
+    background: '#ee8a65';
+    color: '#EEEEEEFF';
+    border: 'none';
+    borderRadius: '3px';
+
+`
+
+const InputCity = styled.input`
+    display: block;
+    padding-left: 30px;
+    margin: 30px;
+    margin-right: 14.4vw;
+    padding: 10px;
+    background: rgb(255, 255, 255);
+    color: #0b0b19;
+    border: none;
+    border-radius: 0.7vw;
+    fontweight: bold;
+    font-size: 1vw;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+
+
+    @media (max-width: 1260px) {
+        margin: 20px auto;
+        width: 80vmin;
+    }
+`
+
 const Translate = styled.h2`
     font-family: "ArchivoBlack-Regular", sans-serif;
 `
 
 const Container = styled.div`
-    background: rgba(11, 11, 25);
     position: relative;
+    background: rgba(11, 11, 25);
     height: 100vh;
 `
 
 const Map = styled.div`
-    width: 80vmin;
-    height: 80vmin;
-    position: absolute;
-    right: 2.1vw;
-    top: 50%;
-    transform: translateY(-50%);
-    border-radius: 20px;
-    z-index: 0;
+    position: relative;
+    width: 100%;
+    height: 100%;
 
-    @media (max-width: 1260px) {
-        left: 0;
-        right: 0;
-        margin: auto;
-    }
-
-    @media (max-width: 500px) {
-        top: 50%;
-    }
 `
