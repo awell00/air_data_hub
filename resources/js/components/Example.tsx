@@ -328,6 +328,21 @@ const App: React.FC = () => {
         }
     };
 
+    const handleStyleChange = () => {
+        if (mapStyle === 'mapbox://styles/mapbox/streets-v11') {
+            setMapStyle('mapbox://styles/mapbox/standard');
+        } else {
+            setMapStyle('mapbox://styles/mapbox/light-v11');
+        }
+    };
+
+// Step 3: Update the map style when the state variable changes
+    useEffect(() => {
+        if (map.current) {
+            map.current.setStyle(mapStyle);
+        }
+    }, [mapStyle]);
+
     const handleKeyPress = (e: React.KeyboardEvent<Element>) => {
         if (e.key === "Enter") {
             handleTest(e);
@@ -339,7 +354,9 @@ const App: React.FC = () => {
             <AllTitle>
                 <Title className="my-text" ref={titleRef}>AIR DATA HUB</Title>
                 <Title2 className="my-text">FROM DATA-X</Title2>
-                <InputCity type="text" className="my-text2" value={city} onChange={e => setCity(e.target.value)} onKeyPress={handleKeyPress} placeholder="Search a City"/>
+                <InputCity type="text" className="my-text2" value={city} onChange={e => setCity(e.target.value)}
+                           onKeyPress={handleKeyPress} placeholder="Search a City"/>
+                {/*<button onClick={handleStyleChange}>Change Map Style</button>*/}
             </AllTitle>
 
             <Map ref={mapContainer}/>
@@ -382,13 +399,6 @@ const Title = styled.h1`
     color: #EEEEEEFF;
     padding-left: 30px;
     padding-top: 30px;
-
-
-    @media (max-width: 600px) {
-        font-size: 7.5vw;
-        letter-spacing: 1.5vw;
-    }
-
 `
 
 const Title2 = styled.h2`
@@ -416,23 +426,21 @@ const InputCity = styled.input`
     display: block;
     padding-left: 30px;
     margin: 30px;
-    margin-right: 14.4vw;
+    margin-right: 10%;
     padding: 10px;
     background: rgb(255, 255, 255);
     color: #0b0b19;
     border: none;
-    border-radius: 0.7vw;
-    fontweight: bold;
-    font-size: 1vw;
-    font-family: "Montserrat", sans-serif;
+    border-radius: 10px;
     font-weight: 500;
+    font-size: 16px;
+    font-family: "Montserrat", sans-serif;
 
-
-    @media (max-width: 1260px) {
-        margin: 20px auto;
-        width: 80vmin;
+    @media (min-width: 768px) {
+        font-size: 16px;
+        margin-right: 5%;
     }
-`
+`;
 
 const Translate = styled.h2`
     font-family: "ArchivoBlack-Regular", sans-serif;
