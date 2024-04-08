@@ -7,6 +7,13 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'Aileron-SemiBold';
+    src: url('../../fonts/Aileron-SemiBold.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 .my-text, .my-text2 {
     transition: color 1s ease;
 }
@@ -15,14 +22,7 @@
     transition: background-color 1s ease;
 }
 
-@font-face {
-    font-family: 'Aileron-SemiBold';
-    src: url('../../fonts/Aileron-SemiBold.otf') format('opentype');
-    font-weight: normal;
-    font-style: normal;
-}
-
-@media (max-width: 319px) {
+@media (max-width: 279px) {
     body::after {
         content: "Not possible to display the page";
         position: fixed;

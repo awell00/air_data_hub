@@ -399,6 +399,10 @@ const Title = styled.h1`
     color: #EEEEEEFF;
     padding-left: 30px;
     padding-top: 30px;
+
+    @media (max-width: 650px) {
+        font-size: 8vw;
+    }
 `
 
 const Title2 = styled.h2`
@@ -408,6 +412,11 @@ const Title2 = styled.h2`
     /* letter-spacing: .5vw;*/
     color: #EEEEEEFF;
     padding-left: 30px;
+
+    @media (max-width: 650px) {
+        font-size: 3vw;
+    }
+
 
 `
 
@@ -436,8 +445,8 @@ const InputCity = styled.input`
     font-size: 16px;
     font-family: "Montserrat", sans-serif;
 
-    @media (min-width: 768px) {
-        font-size: 16px;
+    @media (max-width: 768px) {
+        font-size: 14px;
         margin-right: 5%;
     }
 `;
