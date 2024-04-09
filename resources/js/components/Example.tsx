@@ -27,11 +27,28 @@ const App: React.FC = () => {
     const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/standard');
     const titleRef = useRef<HTMLHeadingElement | null>(null); // Add this line
     const timeoutRef = useRef<number | null>(null);
+    const [coordinatesValue, setCoordinates] = useState([]);
+    const [ppmValue, setPpm] = useState<number[]>([])
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
         i18n.changeLanguage(browserLang);
     }, []);
+
+    useEffect(() => {
+        fetch('http://127.0.0.1:8000/api/gaz')
+            .then(response => response.json())
+            .then(data => {
+                // Map the data to the format that your application expects
+                const coords = data.map((item: {lat: number, lon: number})  => [item.lon, item.lat]);
+                const ppm = data.map((item: {ppm: number}) => item.ppm)
+
+                setPpm(ppm);
+                setCoordinates(coords);
+            })
+            .catch(error => console.error('Error fetching data from /gaz:', error));
+    }, []);
+
 
     useEffect(() => {
         const handleResize = () => {
@@ -49,7 +66,6 @@ const App: React.FC = () => {
             setZoom(Math.min(width, height) / divisor);
             map.current?.setZoom(zoomValue);
         };
-
 
         window.addEventListener('resize', handleResize);
 
@@ -82,19 +98,6 @@ const App: React.FC = () => {
                 });
 
                 map.current.on('load', () => {
-                    /*map.current?.on('zoom', () => {
-                        if (map.current) {
-
-                            if (map.current.getZoom() > zoomValue * 1.5) {
-                                if (!styleChanged && map.current?.isStyleLoaded()) {
-                                    setMapStyle('mapbox://styles/robinshood/clulbaf1200p601r2a317d1ju');
-                                    setTimeout(() => {
-                                        setStyleChanged(true);
-                                    }, 1000);
-                                }
-                            }
-                        }
-                    });*/
 
                     if (map.current) {
                         map.current.setFog({
@@ -109,90 +112,112 @@ const App: React.FC = () => {
 
                     handleResize();
 
-                    /*setTimeout(() => {
+                    console.log(ppmValue)
+
+
+                    const validCoordinates = coordinatesValue.filter(coordinate => coordinate !== undefined) as Coordinate[];
+
+                    if (ppmValue !== null) {
+                        // Create a GeoJSON feature collection
+                        const geojson: GeoJSON.FeatureCollection = {
+                            type: 'FeatureCollection',
+                            features: validCoordinates.map((coordinate, index) => ({
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'Point',
+                                    coordinates: [coordinate[0], coordinate[1]],
+
+                                },
+                                properties: {
+                                    id: index,
+                                    radius: 15,
+                                    ppm: ppmValue[index],
+                                }
+                            }))
+                        };
                         if (map.current) {
-                            map.current.flyTo({
-                                center: [lon, lat],
-                                zoom: zoomValue * 1.5,
-                                essential: true
+                            const layers = map.current.getStyle().layers;
+                            // Find the index of the first symbol layer in the map style.
+                            let firstSymbolId;
+                            for (const layer of layers) {
+                                if (layer.type === 'symbol') {
+                                    firstSymbolId = layer.id;
+                                    break;
+                                }
+                            }
+
+                            map.current.addSource('points', {
+                                type: 'geojson',
+                                data: geojson
                             });
-                        }
-                    }, 2000);*/
 
-                    const coordinates = [
-                        [-0.580816, 44.836151],
-                        [-75.5, 39],
-                        [-76.5, 38],
-                        [-0.580816 + 0.3, 44.836151 - 0.3],
-                        [-77.5, 37],
-                        [-78.5, 36],
-                        [-79.5, 35],
-                        [-80.5, 34],
-                        [-81.5, 33],
-                        [-82.5, 32]
-                    ];
+                            map.current.addLayer({
+                                id: 'heatmap',
+                                type: 'heatmap',
+                                source: 'points',
+                                'layout': {},
+                                paint: {
+                                    // Increase the heatmap weight based on frequency and property magnitude
+                                    'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
+                                    // Increase the heatmap color weight weight by zoom level
+                                    // heatmap-intensity is a multiplier on top of heatmap-weight
+                                    'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
+                                    // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+                                    // Begin color ramp at 0-stop with a 0-transparancy color
+                                    // to create a blur-like effect.
+                                    'heatmap-color': [
+                                        'interpolate',
+                                        ['linear'],
+                                        ['heatmap-density'],
+                                        0,
+                                        'rgba(236,222,239,0)',
+                                        0.2,
+                                        'rgb(208,209,230)',
+                                        0.4,
+                                        'rgb(166,189,219)',
+                                        0.6,
+                                        'rgb(103,169,207)',
+                                        0.8,
+                                        'rgb(28,144,153)',
+                                        1,
+                                        'rgb(1,105,114)'
 
-                    const validCoordinates = coordinates.filter(coordinate => coordinate !== undefined) as Coordinate[];
-
-                    // Create a GeoJSON feature collection
-                    const geojson: GeoJSON.FeatureCollection = {
-                        type: 'FeatureCollection',
-                        features: validCoordinates.map((coordinate, index) => ({
-                            type: 'Feature',
-                            geometry: {
-                                type: 'Point',
-                                coordinates: coordinate
+                                    ],
+                                    // Adjust the heatmap radius by zoom level
+                                    'heatmap-radius': [
+                                        'interpolate',
+                                        ['linear'],
+                                        ['zoom'],
+                                        2, 1,
+                                        3, 2,
+                                        4, 5,
+                                        5, 10,
+                                        6, 15,
+                                        7, 20,
+                                        8, 30,
+                                        9, 40,
+                                        10, 60,
+                                        11, 100,
+                                        12, 200,
+                                        13, 300,
+                                        14, 400,
+                                        15, 500,
+                                        16, 700,
+                                    ],
+                                    // Transition from heatmap to circle layer by zoom level
+                                    'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 20, 0]
+                                }
                             },
-                            properties: {
-                                id: index,
-                                radius: (index + 1) * 10
-                            }
-                        }))
-                    };
+                                firstSymbolId
+                            );
+                        }
 
-                    if (!map.current?.getSource('points')) {
-                        map.current?.addSource('points', {
-                            type: 'geojson',
-                            data: geojson
-                        });
-                    }
-
-                    if (!map.current?.getLayer('points')) {
-                        map.current?.addLayer({
-                            id: 'points',
-                            type: 'circle',
-                            source: 'points',
-                            paint: {
-                                'circle-radius': [
-                                    'interpolate',
-                                    ['linear'],
-                                    ['zoom'],
-                                    2, 1,
-                                    3, 2,
-                                    4, 5,
-                                    5, 10,
-                                    6, 15,
-                                    7, 20,
-                                    8, 30,
-                                    9, 40,
-                                    10, 60,
-                                    11, 100,
-                                    12, 200,
-                                    13, 300,
-                                    14, 400,
-                                    15, 500,
-                                    16, 700,
-                                ],
-                                'circle-color': '#0b0b19'
-                            }
-                        });
                     }
                 });
             } catch (error) {
                 console.error('Error fetching IP info:', error);
             }
         }
-
 
         fetchData();
 
@@ -206,7 +231,6 @@ const App: React.FC = () => {
     const textElements = document.getElementsByClassName('my-text');
     const textElement = document.getElementsByClassName('my-text2')[0] as HTMLElement;
 
-// The radius of the globe in degrees
     const zoomTest = 0.001678693092394923;
 
     map.current?.on('move', () => {
@@ -220,8 +244,8 @@ const App: React.FC = () => {
                     for (let i = 0; i < textElements.length; i++) {
                         const element = textElements[i];
                         const element2 = textElement;
-                        if (element instanceof HTMLElement) { // Check if the element is an HTMLElement (and not SVGElement for example)
-                            element.style.color = 'white'; // Or any other style changes you want to make
+                        if (element instanceof HTMLElement) {
+                            element.style.color = 'white';
                             element2.style.background = "white";
                             element2.style.color = "#0B0B19FF";
 
@@ -252,12 +276,7 @@ const App: React.FC = () => {
                 }
             }
         }
-
-
     });
-
-
-
 
     const [city, setCity] = useState('');
     const [lat, setLat] = useState(0);
@@ -271,7 +290,7 @@ const App: React.FC = () => {
             })
                 .then((result) => {
                     const { addresses } = result;
-                    const newCenter = [addresses[0].longitude, addresses[0].latitude] as Coordinate;
+                    const newCenter = [addresses[0].longitude, addresses[0].latitude] as [longitude: number, latitude: number];
                     setLat(newCenter[1]);
                     setLng(newCenter[0]);
                     console.log(newCenter);
@@ -284,7 +303,6 @@ const App: React.FC = () => {
                 clearTimeout(timeoutRef.current);
             }
 
-            // Set a new timeout
             timeoutRef.current = setTimeout(() => {
                 flyToLocation(8);
             }, 4000);
@@ -301,8 +319,8 @@ const App: React.FC = () => {
 
     useEffect(() => {
         if (city === '') {
-            setLat(lat); // replace with the latitude of the initial location
-            setLng(lng); // replace with the longitude of the initial location
+            setLat(lat);
+            setLng(lng);
             timeoutRef.current = window.setTimeout(() => {
                 flyToLocation(1.7);
             }, 500);
@@ -321,7 +339,6 @@ const App: React.FC = () => {
 
     const handleTest = (event: React.KeyboardEvent) => {
         if (event.key === 'Enter') {
-            // Clear the timeout
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
@@ -329,7 +346,6 @@ const App: React.FC = () => {
             setTimeout(() => {
                 flyToLocation(8);
             }, 2500);
-
         }
     };
 
@@ -341,18 +357,17 @@ const App: React.FC = () => {
         }
     };
 
-// Step 3: Update the map style when the state variable changes
-    useEffect(() => {
-        if (map.current) {
-            map.current.setStyle(mapStyle);
-        }
-    }, [mapStyle]);
-
     const handleKeyPress = (e: React.KeyboardEvent<Element>) => {
         if (e.key === "Enter") {
             handleTest(e);
         }
     };
+
+    useEffect(() => {
+        if (map.current) {
+            map.current.setStyle(mapStyle);
+        }
+    }, [mapStyle]);
 
     return (
         <Container>
@@ -365,10 +380,6 @@ const App: React.FC = () => {
             </AllTitle>
 
             <Map ref={mapContainer}/>
-            {/*<TestButton onClick={flyToLocation}>
-                Fly
-            </TestButton>*/}
-            {/*<Translate>{t('Welcome to React')}</Translate>*/}
         </Container>
     );
 }
@@ -380,13 +391,11 @@ const renderApp = () => {
         rootContainer.render(
             <React.StrictMode>
                 <App/>
-
             </React.StrictMode>
         );
     }
 }
 
-// Wait for the DOM to load before rendering the app
 document.addEventListener('DOMContentLoaded', renderApp);
 
 const AllTitle = styled.div`
@@ -400,12 +409,10 @@ const Title = styled.h1`
     font-size: 4vw;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
-   /* letter-spacing: .5vw;*/
     color: #EEEEEEFF;
     padding-left: 30px;
     padding-top: 30px;
     white-space: nowrap;
-
 
     @media (max-width: 600px) {
         font-size: 8vw;
@@ -433,7 +440,6 @@ const TestButton = styled.button`
     color: '#EEEEEEFF';
     border: 'none';
     borderRadius: '3px';
-
 `
 
 const InputCity = styled.input`
@@ -459,7 +465,7 @@ const InputCity = styled.input`
         font-size: 12px;
         margin-right: 3%;
     }
-`;
+`
 
 const Translate = styled.h2`
     font-family: "ArchivoBlack-Regular", sans-serif;
@@ -475,5 +481,4 @@ const Map = styled.div`
     position: relative;
     width: 100%;
     height: 100%;
-
 `

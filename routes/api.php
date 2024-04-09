@@ -10,6 +10,12 @@ Route::get('/example', function () {
     return response()->json($properties);
 });
 
+Route::get('/gaz', function () {
+    $gaz = DB::select('SELECT cities.lat, cities.lon, gaz.ppm FROM gaz JOIN cities ON gaz.idCity = cities.id');
+
+    return response()->json($gaz);
+});
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
