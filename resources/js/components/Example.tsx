@@ -36,7 +36,7 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/gaz')
+        fetch( 'https://airdatahub.salmero.fr/api/gaz')
             .then(response => response.json())
             .then(data => {
                 // Map the data to the format that your application expects
@@ -303,7 +303,7 @@ const App: React.FC = () => {
                 clearTimeout(timeoutRef.current);
             }
 
-            timeoutRef.current = setTimeout(() => {
+            timeoutRef.current = window.setTimeout(() => {
                 flyToLocation(8);
             }, 4000);
         }
