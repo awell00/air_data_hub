@@ -58,6 +58,9 @@ devDependencies:
   '@types/mapbox-gl':
     specifier: ^3.1.0
     version: 3.1.0
+  '@types/node':
+    specifier: ^20.12.6
+    version: 20.12.6
   '@types/react':
     specifier: ^18.2.74
     version: 18.2.74
@@ -90,7 +93,7 @@ devDependencies:
     version: 5.4.3
   vite:
     specifier: ^5.0
-    version: 5.2.7(sass@1.72.0)
+    version: 5.2.7(@types/node@20.12.6)(sass@1.72.0)
 
 packages:
 
@@ -1853,6 +1856,12 @@ packages:
       '@types/pbf': 3.0.5
     dev: false
 
+  /@types/node@20.12.6:
+    resolution: {integrity: sha512-3KurE8taB8GCvZBPngVbp0lk5CKi8M9f9k1rsADh0Evdz5SzJ+Q+Hx9uHoFGsLnLnd1xmkDQr2hVhlA0Mn0lKQ==}
+    dependencies:
+      undici-types: 5.26.5
+    dev: true
+
   /@types/pbf@3.0.5:
     resolution: {integrity: sha512-j3pOPiEcWZ34R6a6mN07mUkM4o4Lwf6hPNt8eilOeZhTFbxFXmKhvXl9Y28jotFPaI1bpPDJsbCprUoNke6OrA==}
     dev: false
@@ -1917,7 +1926,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.24.1(@babel/core@7.24.3)
       '@types/babel__core': 7.20.5
       react-refresh: 0.14.0
-      vite: 5.2.7(sass@1.72.0)
+      vite: 5.2.7(@types/node@20.12.6)(sass@1.72.0)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -2526,7 +2535,7 @@ packages:
       vite: ^5.0.0
     dependencies:
       picocolors: 1.0.0
-      vite: 5.2.7(sass@1.72.0)
+      vite: 5.2.7(@types/node@20.12.6)(sass@1.72.0)
       vite-plugin-full-reload: 1.1.0
     dev: true
 
@@ -3100,6 +3109,10 @@ packages:
       typewise-core: 1.2.0
     dev: false
 
+  /undici-types@5.26.5:
+    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+    dev: true
+
   /union-value@1.0.1:
     resolution: {integrity: sha512-tJfXmxMeWYnczCVs7XAEvIV7ieppALdyepWMkHkwciRpZraG/xwT+s2JN8+pr1+8jCRf80FFzvr+MpQeeoF4Xg==}
     engines: {node: '>=0.10.0'}
@@ -3127,7 +3140,7 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /vite@5.2.7(sass@1.72.0):
+  /vite@5.2.7(@types/node@20.12.6)(sass@1.72.0):
     resolution: {integrity: sha512-k14PWOKLI6pMaSzAuGtT+Cf0YmIx12z9YGon39onaJNy8DLBfBJrzg9FQEmkAM5lpHBZs9wksWAsyF/HkpEwJA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -3155,6 +3168,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 20.12.6
       esbuild: 0.20.2
       postcss: 8.4.38
       rollup: 4.13.2

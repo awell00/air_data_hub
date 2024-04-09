@@ -36,11 +36,17 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetch( 'https://airdatahub.salmero.fr/api/gaz')
+        fetch( 'http://localhost:8000/api/gaz')
             .then(response => response.json())
             .then(data => {
                 // Map the data to the format that your application expects
-                const coords = data.map((item: {lat: number, lon: number})  => [item.lon, item.lat]);
+                const coords = data.map((item: {lat: number, lon: number})  => {
+                    // Add a small random offset to the coordinates
+                    const latOffset = (Math.random() - 0.5) * 0.1;
+                    const lonOffset = (Math.random() - 0.5) * 0.1;
+                    return [item.lon + lonOffset, item.lat + latOffset];
+                });
+
                 const ppm = data.map((item: {ppm: number}) => item.ppm)
 
                 setPpm(ppm);
