@@ -259,9 +259,10 @@ const App: React.FC = () => {
     }, [styleChanged, styleChangedOnce, zoomValue, coordinatesValue, ppmValue]);
 
     const textElements = document.getElementsByClassName('my-text');
-    const textElement = document.getElementsByClassName('my-text2')[0] as HTMLElement;
+    const textElement = document.getElementsByClassName('my-text2');
     const textElement3 = document.getElementsByClassName('my-text3')[0] as HTMLElement;
 
+    console.log(textElement);
     const zoomTest = 0.001678693092394923;
 
     map.current?.on('move', () => {
@@ -274,10 +275,10 @@ const App: React.FC = () => {
                 if (metersPerPixel > zoomTest) {
                     for (let i = 0; i < textElements.length; i++) {
                         const element = textElements[i];
-                        const element2 = textElement;
+                        const element2 = textElement[i];
                         const element3 = textElement3;
 
-                        if (element instanceof HTMLElement) {
+                        if (element instanceof HTMLElement && element2 instanceof HTMLElement) {
                             element.style.color = 'white';
                             element2.style.background = "white";
                             element2.style.color = "#0B0B19FF";
@@ -296,10 +297,10 @@ const App: React.FC = () => {
                 } else {
                     for (let i = 0; i < textElements.length; i++) {
                         const element = textElements[i];
-                        const element2 = textElement;
+                        const element2 = textElement[i];
                         const element3 = textElement3;
 
-                        if (element instanceof HTMLElement) {
+                        if (element instanceof HTMLElement && element2 instanceof HTMLElement) {
                             element.style.color = "#0B0B19FF";
                             element2.style.background = "#0B0B19FF";
                             element2.style.color = "white";
@@ -420,10 +421,10 @@ const App: React.FC = () => {
                 <Title2 className={`my-text ${colorClass}`}>{t('FROM DATA-X')}</Title2>
                 <InputCity type="text" className={`my-text2 ${mapLoaded ? 'my-text2' : 'whit-color'}`} value={city} onChange={e => setCity(e.target.value)}
                            onKeyPress={handleKeyPress} placeholder={t('Search a City...')}/>
-                <GasSelector onChange={e => setSelectedGas(e.target.value)} className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`}>
-                    <option value="NH3" className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`} >NH3</option>
-                    <option value="CO2" className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`}>CO2</option>
-                    <option value="H2O" className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`}>H2O</option>
+                <GasSelector onChange={e => setSelectedGas(e.target.value)} className={`my-text2 ${mapLoaded ? 'my-text2' : 'whit-color'}`}>
+                    <option value="NH3">NH3</option>
+                    <option value="CO2">CO2</option>
+                    <option value="H2O">H2O</option>
                 </GasSelector>
             </AllTitle>
             <RightButton className="my-text3" onClick={handleStyleChange}>{t('Log in')}</RightButton>
