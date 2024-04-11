@@ -4,7 +4,6 @@ import '../../css/app.css';
 import Radar from 'radar-sdk-js';
 import 'radar-sdk-js/dist/radar.css';
 import mapboxgl from 'mapbox-gl';
-import { LngLat } from 'mapbox-gl';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import styled from 'styled-components';
@@ -29,6 +28,13 @@ const App: React.FC = () => {
     const timeoutRef = useRef<number | null>(null);
     const [coordinatesValue, setCoordinates] = useState([]);
     const [ppmValue, setPpm] = useState<number[]>([])
+    const [city, setCity] = useState('');
+    const [lat, setLat] = useState(0);
+    const [lng, setLng] = useState(0);
+    const [prevMapStyle, setPrevMapStyle] = useState('')
+    const [selectedGas, setSelectedGas] = useState('NH3');
+    const [currentZoom, setCurrentZoom] = useState<Zoom>(1.7);
+    const [mapLoaded, setMapLoaded] = useState(false);
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
@@ -39,24 +45,28 @@ const App: React.FC = () => {
         fetch( 'http://localhost:8000/api/gaz')
             .then(response => response.json())
             .then(data => {
-                // Map the data to the format that your application expects
-                const coords = data.map((item: {lat: number, lon: number})  => {
+                // Filter the data based on the selected gas
+                const filteredData = data.filter((item: {name: string}) => item.name === selectedGas);
+
+                // Map the filtered data to the format that your application expects
+                const coords = filteredData.map((item: {lat: number, lon: number})  => {
                     // Add a small random offset to the coordinates
                     const latOffset = (Math.random() - 0.5) * 0.1;
                     const lonOffset = (Math.random() - 0.5) * 0.1;
                     return [item.lon + lonOffset, item.lat + latOffset];
                 });
 
-                const ppm = data.map((item: {ppm: number}) => item.ppm)
+                const ppm = filteredData.map((item: {ppm: number}) => item.ppm)
 
                 setPpm(ppm);
                 setCoordinates(coords);
             })
             .catch(error => console.error('Error fetching data from /gaz:', error));
-    }, []);
+    }, [selectedGas]);
 
 
     useEffect(() => {
+        setMapLoaded(false);
         const handleResize = () => {
             const width = window.innerWidth * 0.8;
             const height = window.innerHeight * 0.8;
@@ -70,7 +80,10 @@ const App: React.FC = () => {
             }
 
             setZoom(Math.min(width, height) / divisor);
-            map.current?.setZoom(zoomValue);
+            if (currentZoom == 1.7) {
+                map.current?.setZoom(zoomValue);
+            }
+
         };
 
         window.addEventListener('resize', handleResize);
@@ -100,11 +113,18 @@ const App: React.FC = () => {
                     container: mapContainer.current,
                     style: mapStyle,
                     center: [lon, lat],
-                    zoom: 1.7
+                    zoom: currentZoom
+                });
+
+                map.current?.on('move', () => {
+                    const zoom = map.current?.getZoom();
+                    if (zoom) {
+                        setCurrentZoom(zoom);
+                    }
                 });
 
                 map.current.on('load', () => {
-
+                    setMapLoaded(false);
                     if (map.current) {
                         map.current.setFog({
                             color: 'rgb(186, 210, 235)',
@@ -117,9 +137,6 @@ const App: React.FC = () => {
                     }
 
                     handleResize();
-
-                    console.log(ppmValue)
-
 
                     const validCoordinates = coordinatesValue.filter(coordinate => coordinate !== undefined) as Coordinate[];
 
@@ -141,9 +158,9 @@ const App: React.FC = () => {
                                 }
                             }))
                         };
+
                         if (map.current) {
                             const layers = map.current.getStyle().layers;
-                            // Find the index of the first symbol layer in the map style.
                             let firstSymbolId;
                             for (const layer of layers) {
                                 if (layer.type === 'symbol') {
@@ -152,73 +169,80 @@ const App: React.FC = () => {
                                 }
                             }
 
-                            map.current.addSource('points', {
-                                type: 'geojson',
-                                data: geojson
-                            });
+                            if (map.current) {
+                                setMapLoaded(false);
+                                if (map.current.getSource('points')) {
+                                    console.log("test"),
+                                    (map.current?.getSource('points') as mapboxgl.GeoJSONSource).setData(geojson);
+                                } else {
+                                    // If the source 'points' does not exist, create it
+                                    map.current.addSource('points', {
+                                        type: 'geojson',
+                                        data: geojson
+                                    });
 
-                            map.current.addLayer({
-                                id: 'heatmap',
-                                type: 'heatmap',
-                                source: 'points',
-                                'layout': {},
-                                paint: {
-                                    // Increase the heatmap weight based on frequency and property magnitude
-                                    'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
-                                    // Increase the heatmap color weight weight by zoom level
-                                    // heatmap-intensity is a multiplier on top of heatmap-weight
-                                    'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
-                                    // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
-                                    // Begin color ramp at 0-stop with a 0-transparancy color
-                                    // to create a blur-like effect.
-                                    'heatmap-color': [
-                                        'interpolate',
-                                        ['linear'],
-                                        ['heatmap-density'],
-                                        0,
-                                        'rgba(236,222,239,0)',
-                                        0.2,
-                                        'rgb(208,209,230)',
-                                        0.4,
-                                        'rgb(166,189,219)',
-                                        0.6,
-                                        'rgb(103,169,207)',
-                                        0.8,
-                                        'rgb(28,144,153)',
-                                        1,
-                                        'rgb(1,105,114)'
+                                    map.current.addLayer({
+                                            id: 'heatmap',
+                                            type: 'heatmap',
+                                            source: 'points',
+                                            'layout': {},
+                                            paint: {
+                                                'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
+                                                'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
 
-                                    ],
-                                    // Adjust the heatmap radius by zoom level
-                                    'heatmap-radius': [
-                                        'interpolate',
-                                        ['linear'],
-                                        ['zoom'],
-                                        2, 1,
-                                        3, 2,
-                                        4, 5,
-                                        5, 10,
-                                        6, 15,
-                                        7, 20,
-                                        8, 30,
-                                        9, 40,
-                                        10, 60,
-                                        11, 100,
-                                        12, 200,
-                                        13, 300,
-                                        14, 400,
-                                        15, 500,
-                                        16, 700,
-                                    ],
-                                    // Transition from heatmap to circle layer by zoom level
-                                    'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 20, 0]
+                                                'heatmap-color': [
+                                                    'interpolate',
+                                                    ['linear'],
+                                                    ['heatmap-density'],
+                                                    0,
+                                                    'rgba(236,222,239,0)',
+                                                    0.2,
+                                                    'rgb(208,209,230)',
+                                                    0.4,
+                                                    'rgb(166,189,219)',
+                                                    0.6,
+                                                    'rgb(103,169,207)',
+                                                    0.8,
+                                                    'rgb(28,144,153)',
+                                                    1,
+                                                    'rgb(1,105,114)'
+
+                                                ],
+                                                'heatmap-radius': [
+                                                    'interpolate',
+                                                    ['linear'],
+                                                    ['zoom'],
+                                                    2, 1,
+                                                    3, 2,
+                                                    4, 5,
+                                                    5, 10,
+                                                    6, 15,
+                                                    7, 20,
+                                                    8, 30,
+                                                    9, 40,
+                                                    10, 60,
+                                                    11, 100,
+                                                    12, 200,
+                                                    13, 300,
+                                                    14, 400,
+                                                    15, 500,
+                                                    16, 700,
+                                                ],
+                                                'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 20, 0]
+                                            }
+                                        },
+                                        firstSymbolId
+                                    );
                                 }
-                            },
-                                firstSymbolId
-                            );
-                        }
+                            }
 
+
+                        }
                     }
+
+                    setTimeout(() => {
+                        setMapLoaded(true);
+                    }, 500);
                 });
             } catch (error) {
                 console.error('Error fetching IP info:', error);
@@ -232,10 +256,11 @@ const App: React.FC = () => {
 
             map.current?.remove();
         };
-    }, [styleChanged, styleChangedOnce, zoomValue]);
+    }, [styleChanged, styleChangedOnce, zoomValue, coordinatesValue, ppmValue]);
 
     const textElements = document.getElementsByClassName('my-text');
     const textElement = document.getElementsByClassName('my-text2')[0] as HTMLElement;
+    const textElement3 = document.getElementsByClassName('my-text3')[0] as HTMLElement;
 
     const zoomTest = 0.001678693092394923;
 
@@ -250,10 +275,15 @@ const App: React.FC = () => {
                     for (let i = 0; i < textElements.length; i++) {
                         const element = textElements[i];
                         const element2 = textElement;
+                        const element3 = textElement3;
+
                         if (element instanceof HTMLElement) {
                             element.style.color = 'white';
                             element2.style.background = "white";
                             element2.style.color = "#0B0B19FF";
+                            element3.style.display = "display";
+                            element3.style.opacity = "1";
+                            element3.style.visibility = "visible";
 
                             let style = document.createElement('style');
                             style.innerHTML = `
@@ -267,10 +297,14 @@ const App: React.FC = () => {
                     for (let i = 0; i < textElements.length; i++) {
                         const element = textElements[i];
                         const element2 = textElement;
+                        const element3 = textElement3;
+
                         if (element instanceof HTMLElement) {
                             element.style.color = "#0B0B19FF";
                             element2.style.background = "#0B0B19FF";
                             element2.style.color = "white";
+                            element3.style.visibility = "hidden";
+                            element3.style.opacity = "0";
                             let style = document.createElement('style');
                             style.innerHTML = `
                             .my-text2::placeholder {
@@ -283,10 +317,6 @@ const App: React.FC = () => {
             }
         }
     });
-
-    const [city, setCity] = useState('');
-    const [lat, setLat] = useState(0);
-    const [lng, setLng] = useState(0);
 
     useEffect(() => {
         if (city) {
@@ -302,7 +332,7 @@ const App: React.FC = () => {
                     console.log(newCenter);
                 })
                 .catch((err) => {
-                    // handle error
+
                 });
 
             if (timeoutRef.current) {
@@ -357,9 +387,15 @@ const App: React.FC = () => {
 
     const handleStyleChange = () => {
         if (mapStyle === 'mapbox://styles/mapbox/streets-v11') {
+            setPrevMapStyle(mapStyle);
             setMapStyle('mapbox://styles/mapbox/standard');
-        } else {
+        } else if (mapStyle === 'mapbox://styles/mapbox/standard') {
+            setPrevMapStyle(mapStyle);
             setMapStyle('mapbox://styles/mapbox/light-v11');
+        } else {
+            const temp = mapStyle;
+            setMapStyle(prevMapStyle);
+            setPrevMapStyle(temp);
         }
     };
 
@@ -375,17 +411,23 @@ const App: React.FC = () => {
         }
     }, [mapStyle]);
 
+    const colorClass = mapLoaded ? 'my-text' : 'white-color';
+
     return (
         <Container>
             <AllTitle>
-                <Title className="my-text" ref={titleRef}>AIR DATA HUB</Title>
-                <Title2 className="my-text">{t('FROM DATA-X')}</Title2>
-                <InputCity type="text" className="my-text2" value={city} onChange={e => setCity(e.target.value)}
-                           onKeyPress={handleKeyPress} placeholder="Search a City"/>
-                {/*<button onClick={handleStyleChange}>Change Map Style</button>*/}
+                <Title className={`my-text ${colorClass}`} ref={titleRef}>AIR DATA HUB</Title>
+                <Title2 className={`my-text ${colorClass}`}>{t('FROM DATA-X')}</Title2>
+                <InputCity type="text" className={`my-text2 ${mapLoaded ? 'my-text2' : 'whit-color'}`} value={city} onChange={e => setCity(e.target.value)}
+                           onKeyPress={handleKeyPress} placeholder={t('Search a City...')}/>
+                <GasSelector onChange={e => setSelectedGas(e.target.value)} className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`}>
+                    <option value="NH3" className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`} >NH3</option>
+                    <option value="CO2" className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`}>CO2</option>
+                    <option value="H2O" className={`my-text2 ${mapLoaded ? 'whit-color' : 'my-text2'}`}>H2O</option>
+                </GasSelector>
             </AllTitle>
-
-            <Map ref={mapContainer}/>
+            <RightButton className="my-text3" onClick={handleStyleChange}>{t('Log in')}</RightButton>
+            <Map ref={mapContainer} className={mapLoaded ? 'map-visible' : 'map-hidden'}/>
         </Container>
     );
 }
@@ -411,17 +453,59 @@ const AllTitle = styled.div`
     z-index: 1;
 `
 
+const GasSelector = styled.select`
+    display: block;
+    margin-left: 30px;
+    padding: 10px 15px 10px 15px;
+    width: 80px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 14px;
+    font-family: 'Aileron-SemiBold', sans-serif;
+    color: #0b0b19;
+    background-color: #eeee;
+`
+
+
+const RightButton = styled.button`
+    position: absolute;
+    right: 30px;
+    top: 34px;
+    padding: 12px 15px 12px 15px;
+    background: #eeeeee;
+    color: #0b0b19;
+    border: none;
+    font-family: 'Aileron-SemiBold', sans-serif;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 1;
+
+    transition: background 0.3s, color 0.3s;
+
+    &:hover {
+        background: #c6c6c6;
+        color: #0b0b19;
+    }
+
+    @media (max-width: 450px) {
+        font-size: 14px;
+        padding: 10px 12px 10px 12px;
+    }
+`;
+
 const Title = styled.h1`
     font-size: 4vw;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
-    color: #EEEEEEFF;
+    color: #eeeeee;
     padding-left: 30px;
     padding-top: 30px;
     white-space: nowrap;
 
-    @media (max-width: 600px) {
-        font-size: 8vw;
+    @media (max-width: 450px) {
+        font-size: 7vw;
     }
 `
 
@@ -429,48 +513,35 @@ const Title2 = styled.h2`
     font-size: 1.5vw;
     font-family: "Montserrat", sans-serif;
     font-weight: 500;
-    /* letter-spacing: .5vw;*/
-    color: #EEEEEEFF;
+    color: #eeeeee;
     padding-left: 30px;
 
-    @media (max-width: 600px) {
+    @media (max-width: 450px) {
         font-size: 3vw;
     }
 `
 
-const TestButton = styled.button`
-    display: 'block';
-    margin: '20px auto';
-    padding: '10px';
-    background: '#ee8a65';
-    color: '#EEEEEEFF';
-    border: 'none';
-    borderRadius: '3px';
-`
-
 const InputCity = styled.input`
     display: block;
-    padding-left: 30px;
+    padding: 15px; // Increase padding-left to make space for the SVG
     margin: 30px;
-    margin-right: 8%;
-    padding: 10px;
-    background: rgb(255, 255, 255);
+    width: 31vw;
+    /*    margin-right: 8%;*//**/
+
     color: #0b0b19;
+    background-color: #eeeeee;
     border: none;
     border-radius: 10px;
     font-weight: 500;
-    font-size: 16px;
-    font-family: "Montserrat", sans-serif;
+    font-size: 14px;
+    font-family: 'Aileron-SemiBold', sans-serif;
 
-    @media (max-width: 600px) {
-        font-size: 14px;
-        margin-right: 3%;
-    }
-
-    @media (max-width: 400px) {
+    @media (max-width: 450px) {
         font-size: 12px;
-        margin-right: 3%;
+        width: 54vw;
+        padding: 13px;
     }
+
 `
 
 const Translate = styled.h2`
@@ -488,3 +559,12 @@ const Map = styled.div`
     width: 100%;
     height: 100%;
 `
+
+//TODO: Clean Code
+//TODO: Remove if not needed
+//TODO: Comment Code
+//TODO: Add Types
+//TODO: Add Tests
+//TODO: Connect DB correctly
+//TODO: Avoid errors
+//TODO: Add Images Sources

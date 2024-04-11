@@ -11,7 +11,7 @@ Route::get('/example', function () {
 });
 
 Route::get('/gaz', function () {
-    $gaz = DB::select('SELECT cities.lat, cities.lon, gaz.ppm FROM gaz JOIN cities ON gaz.idCity = cities.id');
+    $gaz = DB::select('SELECT cities.lat, cities.lon, gaz.ppm, gaz.name FROM gaz JOIN cities ON gaz.idCity = cities.id');
 
     return response()->json($gaz);
 });

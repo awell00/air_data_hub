@@ -9,12 +9,16 @@ i18n
         resources: {
             en: {
                 translation: {
-                    "FROM DATA-X": "FROM DATA-X"
+                    "FROM DATA-X": "FROM DATA-X",
+                    "Log in": "Log in",
+                    "Search a City...": "Search a City..."
                 }
             },
             fr: {
                 translation: {
-                    "FROM DATA-X": "PAR DATA-X"
+                    "FROM DATA-X": "PAR DATA-X",
+                    "Log in": "Connexion",
+                    "Search a City...": "Rechercher une ville..."
                 }
             }
         },
