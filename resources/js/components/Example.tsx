@@ -7,9 +7,14 @@ import mapboxgl from 'mapbox-gl';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import styled from 'styled-components';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 
+type GasType = 'NH3' | 'CO2' | 'H2O';
 type Coordinate = [number, number];
 type Zoom = number;
+interface Expression {
+    [index: number]: string | number | Expression;
+}
 
 Radar.initialize('prj_live_pk_e0443df992afd7bebd2ae00bfbc34e850a743aea');
 
@@ -32,9 +37,14 @@ const App: React.FC = () => {
     const [lat, setLat] = useState(0);
     const [lng, setLng] = useState(0);
     const [prevMapStyle, setPrevMapStyle] = useState('')
-    const [selectedGas, setSelectedGas] = useState('NH3');
+    const [selectedGas, setSelectedGas] = useState<GasType>('NH3');
     const [currentZoom, setCurrentZoom] = useState<Zoom>(1.7);
     const [mapLoaded, setMapLoaded] = useState(false);
+    const [gasColors, setGasColors] = useState<string[]>(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)']);
+    const textElementTitle1 = document.getElementsByClassName('title1');
+    const textElementTitle2 = document.getElementsByClassName('title2');
+    const textElement3 = document.getElementsByClassName('button');
+    const geocoderAddedRef = useRef(false);
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
@@ -60,6 +70,7 @@ const App: React.FC = () => {
 
                 setPpm(ppm);
                 setCoordinates(coords);
+
             })
             .catch(error => console.error('Error fetching data from /gaz:', error));
     }, [selectedGas]);
@@ -116,6 +127,61 @@ const App: React.FC = () => {
                     zoom: currentZoom
                 });
 
+                const geocoder = new MapboxGeocoder({
+                    accessToken: mapboxgl.accessToken,
+                    flyTo: {
+                        bearing: 0,
+                        speed: 2,
+                        curve: 1,
+                        easing: function (t) {
+                            return t;
+                        }
+                    },
+                    mapboxgl: mapboxgl,
+                    marker: false
+                });
+
+                geocoder.on('clear', function() {
+                    map.current?.flyTo({
+                        center: [2, 46],
+                        zoom: 0.8,
+                        speed: 2 // Augmentez cette valeur pour rendre la transition plus rapide
+                    });
+                });// Check if the geocoder is correctly created
+
+                geocoder.on('result', function(e) {
+                    map.current?.flyTo({
+                        center: e.result.geometry.coordinates,
+                        zoom: 8
+                    });
+                });
+
+                const geocoderDiv = document.getElementById('all-title-div');
+                const gasSelector = document.querySelector('.gas-selector');
+
+                if (geocoderDiv && gasSelector && !geocoderAddedRef.current) {
+                    // Insert the geocoder before the select element
+                    geocoderDiv.insertBefore(geocoder.onAdd(map.current), gasSelector);
+                    geocoderAddedRef.current = true;
+
+                    const titleContainer = document.querySelector('.title-container') as HTMLElement;
+                    const titleContainerWidth = titleContainer ? titleContainer.offsetWidth : 0;
+
+                    if (geocoderDiv.firstChild) {
+                        const thirdChild = geocoderDiv.children[2] as HTMLElement;
+                        thirdChild.style.width = `${titleContainerWidth}px`;
+                        thirdChild.style.display = 'block';
+                        thirdChild.style.margin = '30px';
+
+                        thirdChild.style.color = '#0b0b19';
+                        thirdChild.style.backgroundColor = '#eeeeee';
+                        thirdChild.style.borderRadius = '10px';
+
+                        thirdChild.style.transition = 'background-color 1s ease';
+
+                    }
+                }
+
                 map.current?.on('move', () => {
                     const zoom = map.current?.getZoom();
                     if (zoom) {
@@ -138,6 +204,7 @@ const App: React.FC = () => {
 
                     handleResize();
 
+
                     const validCoordinates = coordinatesValue.filter(coordinate => coordinate !== undefined) as Coordinate[];
 
                     if (ppmValue !== null) {
@@ -159,6 +226,9 @@ const App: React.FC = () => {
                             }))
                         };
 
+
+
+
                         if (map.current) {
                             const layers = map.current.getStyle().layers;
                             let firstSymbolId;
@@ -172,7 +242,6 @@ const App: React.FC = () => {
                             if (map.current) {
                                 setMapLoaded(false);
                                 if (map.current.getSource('points')) {
-                                    console.log("test"),
                                     (map.current?.getSource('points') as mapboxgl.GeoJSONSource).setData(geojson);
                                 } else {
                                     // If the source 'points' does not exist, create it
@@ -181,58 +250,61 @@ const App: React.FC = () => {
                                         data: geojson
                                     });
 
-                                    map.current.addLayer({
-                                            id: 'heatmap',
-                                            type: 'heatmap',
-                                            source: 'points',
-                                            'layout': {},
-                                            paint: {
-                                                'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
-                                                'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
+                                    if (gasColors) {
+                                        map.current.addLayer({
+                                                id: 'heatmap',
+                                                type: 'heatmap',
+                                                source: 'points',
+                                                'layout': {},
+                                                paint: {
+                                                    'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
+                                                    'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
 
-                                                'heatmap-color': [
-                                                    'interpolate',
-                                                    ['linear'],
-                                                    ['heatmap-density'],
-                                                    0,
-                                                    'rgba(236,222,239,0)',
-                                                    0.2,
-                                                    'rgb(208,209,230)',
-                                                    0.4,
-                                                    'rgb(166,189,219)',
-                                                    0.6,
-                                                    'rgb(103,169,207)',
-                                                    0.8,
-                                                    'rgb(28,144,153)',
-                                                    1,
-                                                    'rgb(1,105,114)'
+                                                    'heatmap-color': [
+                                                        'interpolate',
+                                                        ['linear'],
+                                                        ['heatmap-density'],
+                                                        0,
+                                                        gasColors[0],
+                                                        0.2,
+                                                        gasColors[1],
+                                                        0.4,
+                                                        gasColors[2],
+                                                        0.6,
+                                                        gasColors[3],
+                                                        0.8,
+                                                        gasColors[4],
+                                                        1,
+                                                        gasColors[5]
 
-                                                ],
-                                                'heatmap-radius': [
-                                                    'interpolate',
-                                                    ['linear'],
-                                                    ['zoom'],
-                                                    2, 1,
-                                                    3, 2,
-                                                    4, 5,
-                                                    5, 10,
-                                                    6, 15,
-                                                    7, 20,
-                                                    8, 30,
-                                                    9, 40,
-                                                    10, 60,
-                                                    11, 100,
-                                                    12, 200,
-                                                    13, 300,
-                                                    14, 400,
-                                                    15, 500,
-                                                    16, 700,
-                                                ],
-                                                'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 20, 0]
-                                            }
-                                        },
-                                        firstSymbolId
-                                    );
+                                                    ],
+                                                    'heatmap-radius': [
+                                                        'interpolate',
+                                                        ['linear'],
+                                                        ['zoom'],
+                                                        2, 1,
+                                                        3, 2,
+                                                        4, 5,
+                                                        5, 10,
+                                                        6, 15,
+                                                        7, 20,
+                                                        8, 30,
+                                                        9, 40,
+                                                        10, 60,
+                                                        11, 100,
+                                                        12, 200,
+                                                        13, 300,
+                                                        14, 400,
+                                                        15, 500,
+                                                        16, 700,
+                                                    ],
+                                                    'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 20, 0]
+                                                }
+                                            },
+                                            firstSymbolId
+                                        );
+                                    }
+
                                 }
                             }
 
@@ -258,11 +330,7 @@ const App: React.FC = () => {
         };
     }, [styleChanged, styleChangedOnce, zoomValue, coordinatesValue, ppmValue]);
 
-    const textElements = document.getElementsByClassName('my-text');
-    const textElement = document.getElementsByClassName('my-text2');
-    const textElement3 = document.getElementsByClassName('my-text3')[0] as HTMLElement;
 
-    console.log(textElement);
     const zoomTest = 0.001678693092394923;
 
     map.current?.on('move', () => {
@@ -273,46 +341,29 @@ const App: React.FC = () => {
             const metersPerPixel = Math.cos(latitude * Math.PI / 180) / scale;
             if (metersPerPixel) {
                 if (metersPerPixel > zoomTest) {
-                    for (let i = 0; i < textElements.length; i++) {
-                        const element = textElements[i];
-                        const element2 = textElement[i];
-                        const element3 = textElement3;
+                    const element = textElementTitle1;
+                    const element2 = textElementTitle2;
+                    const element3 = textElement3;
 
-                        if (element instanceof HTMLElement && element2 instanceof HTMLElement) {
-                            element.style.color = 'white';
-                            element2.style.background = "white";
-                            element2.style.color = "#0B0B19FF";
-                            element3.style.display = "display";
-                            element3.style.opacity = "1";
-                            element3.style.visibility = "visible";
 
-                            let style = document.createElement('style');
-                            style.innerHTML = `
-                            .my-text2::placeholder {
-                                color: #575757FF;
-                            }`;
-                            document.head.appendChild(style);
-                        }
+                    if (element instanceof HTMLElement && element2 instanceof HTMLElement && element3 instanceof HTMLElement) {
+                        element.style.color = '#eee';
+                        element2.style.color = "#eee";
+
+                        element3.style.visibility = "visible";
+                        element3.style.opacity = "1";
                     }
                 } else {
-                    for (let i = 0; i < textElements.length; i++) {
-                        const element = textElements[i];
-                        const element2 = textElement[i];
-                        const element3 = textElement3;
+                    const element = textElementTitle1;
+                    const element2 = textElementTitle2;
+                    const element3 = textElement3;
 
-                        if (element instanceof HTMLElement && element2 instanceof HTMLElement) {
-                            element.style.color = "#0B0B19FF";
-                            element2.style.background = "#0B0B19FF";
-                            element2.style.color = "white";
-                            element3.style.visibility = "hidden";
-                            element3.style.opacity = "0";
-                            let style = document.createElement('style');
-                            style.innerHTML = `
-                            .my-text2::placeholder {
-                                color: #EEEEEEFF;
-                            }`;
-                            document.head.appendChild(style);
-                        }
+                    if (element instanceof HTMLElement && element2 instanceof HTMLElement && element3 instanceof HTMLElement) {
+                        element.style.color = "#0B0B19FF";
+                        element2.style.color = "#0B0B19FF";
+
+                        element3.style.visibility = "hidden";
+                        element3.style.opacity = "0";
                     }
                 }
             }
@@ -400,9 +451,19 @@ const App: React.FC = () => {
         }
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent<Element>) => {
-        if (e.key === "Enter") {
-            handleTest(e);
+    const handleGasChange = (value: string) => {
+        if (value === 'NH3' || value === 'CO2' || value === 'H2O') {
+            setSelectedGas(value as GasType);
+
+            if (selectedGas === 'NH3') {
+                setGasColors(['rgba(235,255,235,0)', 'rgb(204,255,204)', 'rgb(153,255,153)', 'rgb(102,255,102)', 'rgb(51,255,51)', 'rgb(0,255,0)'])
+            } else if (selectedGas === 'CO2') {
+                setGasColors(['rgba(255,235,235,0)', 'rgb(255,204,204)', 'rgb(255,153,153)', 'rgb(255,102,102)', 'rgb(255,51,51)', 'rgb(255,0,0)'])
+            } else if (selectedGas === 'H2O') {
+                setGasColors(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)'])
+            }
+        } else {
+            console.error(`Invalid gas type: ${value}`);
         }
     };
 
@@ -412,22 +473,21 @@ const App: React.FC = () => {
         }
     }, [mapStyle]);
 
-    const colorClass = mapLoaded ? 'my-text' : 'white-color';
+    const colorClassTitle1 = mapLoaded ? 'title1' : 'white-color';
+    const colorClassTitle2 = mapLoaded ? 'title2' : 'white-color';
 
     return (
         <Container>
-            <AllTitle>
-                <Title className={`my-text ${colorClass}`} ref={titleRef}>AIR DATA HUB</Title>
-                <Title2 className={`my-text ${colorClass}`}>{t('FROM DATA-X')}</Title2>
-                <InputCity type="text" className={`my-text2 ${mapLoaded ? 'my-text2' : 'whit-color'}`} value={city} onChange={e => setCity(e.target.value)}
-                           onKeyPress={handleKeyPress} placeholder={t('Search a City...')}/>
-                <GasSelector onChange={e => setSelectedGas(e.target.value)} className={`my-text2 ${mapLoaded ? 'my-text2' : 'whit-color'}`}>
+            <AllTitle id="all-title-div">
+                <Title className={`title1 ${colorClassTitle1}`} ref={titleRef}>AIR DATA HUB</Title>
+                <Title2 className={`title2 ${colorClassTitle2}`}>{t('FROM DATA-X')}</Title2>
+                <GasSelector onChange={e => handleGasChange(e.target.value)} className="gas-selector">
                     <option value="NH3">NH3</option>
                     <option value="CO2">CO2</option>
                     <option value="H2O">H2O</option>
                 </GasSelector>
             </AllTitle>
-            <RightButton className="my-text3" onClick={handleStyleChange}>{t('Log in')}</RightButton>
+            <RightButton className="button" onClick={handleStyleChange}>{t('Log in')}</RightButton>
             <Map ref={mapContainer} className={mapLoaded ? 'map-visible' : 'map-hidden'}/>
         </Container>
     );
@@ -466,6 +526,7 @@ const GasSelector = styled.select`
     font-family: 'Aileron-SemiBold', sans-serif;
     color: #0b0b19;
     background-color: #eeee;
+    box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
 `
 
 
@@ -482,6 +543,7 @@ const RightButton = styled.button`
     font-size: 16px;
     cursor: pointer;
     z-index: 1;
+    box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
 
     transition: background 0.3s, color 0.3s;
 
@@ -504,6 +566,7 @@ const Title = styled.h1`
     padding-left: 30px;
     padding-top: 30px;
     white-space: nowrap;
+    text-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
 
     @media (max-width: 450px) {
         font-size: 7vw;
@@ -516,33 +579,11 @@ const Title2 = styled.h2`
     font-weight: 500;
     color: #eeeeee;
     padding-left: 30px;
+    text-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
 
     @media (max-width: 450px) {
         font-size: 3vw;
     }
-`
-
-const InputCity = styled.input`
-    display: block;
-    padding: 15px; // Increase padding-left to make space for the SVG
-    margin: 30px;
-    width: 31vw;
-    /*    margin-right: 8%;*//**/
-
-    color: #0b0b19;
-    background-color: #eeeeee;
-    border: none;
-    border-radius: 10px;
-    font-weight: 500;
-    font-size: 14px;
-    font-family: 'Aileron-SemiBold', sans-serif;
-
-    @media (max-width: 450px) {
-        font-size: 12px;
-        width: 54vw;
-        padding: 13px;
-    }
-
 `
 
 const Translate = styled.h2`
@@ -569,3 +610,4 @@ const Map = styled.div`
 //TODO: Connect DB correctly
 //TODO: Avoid errors
 //TODO: Add Images Sources
+//FIX: The geocoder not display

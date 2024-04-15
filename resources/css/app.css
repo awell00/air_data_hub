@@ -14,13 +14,8 @@
     font-style: normal;
 }
 
-.my-text, .my-text2 {
+.title1, .title2 {
     transition: color 1s ease;
-}
-
-.whit-color {
-    color: #0b0b19 !important;
-    background-color: #eeee !important;
 }
 
 .white-color {
@@ -33,14 +28,6 @@
 
 .map-visible {
     visibility: visible;
-}
-
-.my-text2 {
-    transition: background-color 1s ease;
-}
-
-.my-text3 {
-    transition: opacity 1s ease, visibility 1s;
 }
 
 @media (max-width: 279px) {
