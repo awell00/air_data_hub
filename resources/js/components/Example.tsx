@@ -52,7 +52,7 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetch( 'http://localhost:8000/api/gaz')
+        fetch( 'https://airdatahub.salmero.fr/api/gaz')
             .then(response => response.json())
             .then(data => {
                 // Filter the data based on the selected gas
