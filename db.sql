@@ -1,4 +1,4 @@
-/*DROP DATABASE IF EXISTS air_data_hub;*/
+DROP DATABASE IF EXISTS air_data_hub;
 CREATE DATABASE IF NOT EXISTS air_data_hub;
 
 USE air_data_hub;
