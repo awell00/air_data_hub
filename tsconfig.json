@@ -18,6 +18,7 @@
     },
     "include": [
         "src",
-        "resources/js/components"
+        "resources/js/components",
+        "vite-env.d.ts"
     ]
 }

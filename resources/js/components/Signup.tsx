@@ -10,9 +10,19 @@ const App: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
+    const [isAdmin, setIsAdmin] = useState(('user'));
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+
+        // Check if the email is for an admin user
+        if (email === 'awellpro@gmail.com') {
+            console.log("Admin user");
+            setIsAdmin('admin');
+        } else {
+            console.log("Regular user");
+            setIsAdmin('user');
+        }
 
         try {
             const response = await fetch('/api/signup', {
@@ -24,29 +34,17 @@ const App: React.FC = () => {
                     name: username,
                     email: email,
                     password: password,
+                    role: isAdmin,
                 }),
             });
 
-            const text = await response.text();
-            console.log('Response text:', text);
+            window.location.href = '/login';
 
-            try {
-                const data = JSON.parse(text);
-                if (response.status === 201) {
-                    // Handle successful signup here
-                    console.log('User created successfully');
-                    window.location.href = '/login';
-                } else {
-                    // Handle failed signup here
-                    console.log('Failed to create user');
-                }
-            } catch (error) {
-                console.error('Failed to parse response as JSON:', error);
-            }
         } catch (error) {
             console.error('Error:', error);
         }
     }
+
 
     return (
         <div>

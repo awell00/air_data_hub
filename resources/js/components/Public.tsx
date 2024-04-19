@@ -10,14 +10,15 @@ import styled from 'styled-components';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import { BrowserRouter as Router } from 'react-router-dom';
 
-type GasType = 'NH3' | 'CO2' | 'H2O';
+type GasType = 'NH3' | 'CO2 bio' | 'PFC';
 type Coordinate = [number, number];
 type Zoom = number;
+
 interface Expression {
     [index: number]: string | number | Expression;
 }
 
-Radar.initialize('prj_live_pk_e0443df992afd7bebd2ae00bfbc34e850a743aea');
+Radar.initialize(import.meta.env.VITE_RADAR);
 
 const App: React.FC = () => {
     const mapContainer = useRef<HTMLDivElement | null>(null);
@@ -52,7 +53,13 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetch( 'https://airdatahub.salmero.fr/api/gaz')
+
+        fetch( '/api/gaz', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+            },
+        })
             .then(response => response.json())
             .then(data => {
                 const filteredData = data.filter((item: {formulaGas: string}) => item.formulaGas === selectedGas);
@@ -62,7 +69,6 @@ const App: React.FC = () => {
                 });
 
                 const ppm = filteredData.map((item: {ppmValue: number, max_ppmValue: number}) => {
-                    console.log(item.max_ppmValue)
                     return (item.ppmValue/item.max_ppmValue) * 100
                 })
 
@@ -117,7 +123,7 @@ const App: React.FC = () => {
                     lon = 2.2137;
                 }
 
-                mapboxgl.accessToken = 'pk.eyJ1Ijoicm9iaW5zaG9vZCIsImEiOiJjbHVsOG1vcTUwaGt1Mmlsd2h3dTM0ZzFvIn0.W-MBSYBmX_D_AqpOUoRAcA';
+                mapboxgl.accessToken = import.meta.env.VITE_MAPBOX;
                 map.current = new mapboxgl.Map({
                     container: mapContainer.current,
                     style: mapStyle,
@@ -449,15 +455,32 @@ const App: React.FC = () => {
         }
     };
 
+    const [gasTypes, setGasTypes] = useState<string[]>([]);
+
+    useEffect(() => {
+        fetch('/api/gasTypes', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                const gasTypes = data.map((item: {formulaGas: string}) => item.formulaGas);
+                setGasTypes(gasTypes);
+            })
+            .catch(error => console.error('Error fetching gas types:', error));
+    }, []);
+
     const handleGasChange = (value: string) => {
-        if (value === 'NH3' || value === 'CO2' || value === 'H2O') {
+        if (gasTypes.includes(value)) {
             setSelectedGas(value as GasType);
 
             if (selectedGas === 'NH3') {
                 setGasColors(['rgba(235,255,235,0)', 'rgb(204,255,204)', 'rgb(153,255,153)', 'rgb(102,255,102)', 'rgb(51,255,51)', 'rgb(0,255,0)'])
-            } else if (selectedGas === 'CO2') {
+            } else if (selectedGas === 'CO2 bio') {
                 setGasColors(['rgba(255,235,235,0)', 'rgb(255,204,204)', 'rgb(255,153,153)', 'rgb(255,102,102)', 'rgb(255,51,51)', 'rgb(255,0,0)'])
-            } else if (selectedGas === 'H2O') {
+            } else if (selectedGas === 'PFC') {
                 setGasColors(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)'])
             }
         } else {
@@ -480,9 +503,9 @@ const App: React.FC = () => {
                 <Title className={`title1 ${colorClassTitle1}`} ref={titleRef}>AIR DATA HUB</Title>
                 <Title2 className={`title2 ${colorClassTitle2}`}>{t('FROM DATA-X')}</Title2>
                 <GasSelector onChange={e => handleGasChange(e.target.value)} className="gas-selector">
-                    <option value="NH3">NH3</option>
-                    <option value="CO2">CO2</option>
-                    <option value="H2O">H2O</option>
+                    {gasTypes.map(gasType => (
+                        <option key={gasType} value={gasType}>{gasType}</option>
+                    ))}
                 </GasSelector>
             </AllTitle>
             <a href="/login"><RightButton className="button">{t('Log in')}</RightButton></a>

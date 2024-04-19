@@ -8,35 +8,19 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\GazController;
 use App\Models\User;
+use App\Http\Controllers\AuthController;
 
-Route::get('/gaz', [GazController::class, 'getGazData']);
+Route::get('/gaz', [GazController::class, 'getGazData'])->middleware('App\Http\Middleware\CheckApiToken');
 
-Route::post('/login', function (Request $request) {
-    $request->validate([
-        'email' => 'email|required',
-        'password' => 'required'
-    ]);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
-    $credentials = request(['email', 'password']);
-    if (!auth()->attempt($credentials)) {
-        return response()->json([
-            'message' => 'The given data was invalid.',
-            'errors' => [
-                'password' => [
-                    'Invalid credentials'
-                ],
-            ]
-        ], 422);
-    }
+Route::post('/signup', [AuthController::class, 'signup']);
 
-    $user = User::where('email', $request->email)->first();
-    $authToken = $user->createToken('auth-token')->accessToken;
-
-    return response()->json([
-        'access_token' => $authToken,
-        'redirect_url' => '/info'
-    ]);
-})->name('login');
+Route::get('/gasTypes', function () {
+    // select formulaGas from Gases
+    $gasesType = DB::select('SELECT formulaGas FROM Gases');
+    return response()->json($gasesType);
+});
 
 Route::middleware(['auth:api', 'App\Http\Middleware\IsAdmin:admin'])->group(function () {
     Route::post('/add-role', function (Request $request) {
@@ -53,25 +37,6 @@ Route::middleware(['auth:api', 'App\Http\Middleware\IsAdmin:admin'])->group(func
     });
 });
 
-Route::post('/signup', function (Request $request) {
-    try {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
-    } catch (\Exception $e) {
-        return response()->json(['message' => 'Failed to create user', 'error' => $e->getMessage()], 500);
-    }
-});
 
 Route::middleware(['auth:api'])->get('/info', function (Request $request) {
     if ($request->user()) {
