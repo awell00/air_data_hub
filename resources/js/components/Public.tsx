@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import styled from 'styled-components';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import { BrowserRouter as Router } from 'react-router-dom';
 
 type GasType = 'NH3' | 'CO2' | 'H2O';
 type Coordinate = [number, number];
@@ -19,7 +20,6 @@ interface Expression {
 Radar.initialize('prj_live_pk_e0443df992afd7bebd2ae00bfbc34e850a743aea');
 
 const App: React.FC = () => {
-
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
     const [center, setCenter] = useState<Coordinate | undefined>();
@@ -52,21 +52,19 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetch( 'https://airdatahub.salmero.fr/api/gaz')
+        fetch( 'http://localhost:8000/api/gaz')
             .then(response => response.json())
             .then(data => {
-                // Filter the data based on the selected gas
-                const filteredData = data.filter((item: {name: string}) => item.name === selectedGas);
+                const filteredData = data.filter((item: {formulaGas: string}) => item.formulaGas === selectedGas);
 
-                // Map the filtered data to the format that your application expects
-                const coords = filteredData.map((item: {lat: number, lon: number})  => {
-                    // Add a small random offset to the coordinates
-                    const latOffset = (Math.random() - 0.5) * 0.1;
-                    const lonOffset = (Math.random() - 0.5) * 0.1;
-                    return [item.lon + lonOffset, item.lat + latOffset];
+                const coords = filteredData.map((item: {latSensor: number, longSensor: number})  => {
+                    return [item.longSensor, item.latSensor];
                 });
 
-                const ppm = filteredData.map((item: {ppm: number}) => item.ppm)
+                const ppm = filteredData.map((item: {ppmValue: number, max_ppmValue: number}) => {
+                    console.log(item.max_ppmValue)
+                    return (item.ppmValue/item.max_ppmValue) * 100
+                })
 
                 setPpm(ppm);
                 setCoordinates(coords);
@@ -138,7 +136,8 @@ const App: React.FC = () => {
                         }
                     },
                     mapboxgl: mapboxgl,
-                    marker: false
+                    marker: false,
+                    placeholder: t('Search for a city...'),
                 });
 
                 geocoder.on('clear', function() {
@@ -160,7 +159,6 @@ const App: React.FC = () => {
                 const gasSelector = document.querySelector('.gas-selector');
 
                 if (geocoderDiv && gasSelector && !geocoderAddedRef.current) {
-                    // Insert the geocoder before the select element
                     geocoderDiv.insertBefore(geocoder.onAdd(map.current), gasSelector);
                     geocoderAddedRef.current = true;
 
@@ -220,7 +218,7 @@ const App: React.FC = () => {
                                 },
                                 properties: {
                                     id: index,
-                                    radius: 15,
+                                    radius: 5,
                                     ppm: ppmValue[index],
                                 }
                             }))
@@ -487,19 +485,21 @@ const App: React.FC = () => {
                     <option value="H2O">H2O</option>
                 </GasSelector>
             </AllTitle>
-            <RightButton className="button" onClick={handleStyleChange}>{t('Log in')}</RightButton>
+            <a href="/login"><RightButton className="button">{t('Log in')}</RightButton></a>
             <Map ref={mapContainer} className={mapLoaded ? 'map-visible' : 'map-hidden'}/>
         </Container>
     );
 }
 
 const renderApp = () => {
-    const root = document.getElementById("example");
+    const root = document.getElementById("public");
     if (root) {
         const rootContainer = ReactDOM.createRoot(root);
         rootContainer.render(
             <React.StrictMode>
-                <App/>
+                <Router>
+                    <App/>
+                </Router>
             </React.StrictMode>
         );
     }
@@ -544,6 +544,7 @@ const RightButton = styled.button`
     cursor: pointer;
     z-index: 1;
     box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
+    text-decoration: none;
 
     transition: background 0.3s, color 0.3s;
 

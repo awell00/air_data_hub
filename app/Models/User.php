@@ -6,10 +6,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Passport\HasApiTokens;
+use PhpParser\Node\Attribute;
+use Illuminate\Database\Eloquent\Casts\Attribute as CastsAttribute;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -20,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role'
     ];
 
     /**
@@ -32,6 +36,12 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'role' => 'string',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -42,6 +52,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+
         ];
     }
+
+    /*protected function role(): CastsAttribute
+    {
+        return new CastsAttribute(
+            get: fn ($value) => ["user", "admin", "agent", "chef"],
+        );
+    }*/
 }

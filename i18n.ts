@@ -18,7 +18,7 @@ i18n
                 translation: {
                     "FROM DATA-X": "PAR DATA-X",
                     "Log in": "Connexion",
-                    "Search a City...": "Rechercher une ville..."
+                    "Search for a city...": "Rechercher une ville..."
                 }
             }
         },

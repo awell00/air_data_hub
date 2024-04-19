@@ -19,6 +19,6 @@
         @vite(['resources/sass/app.scss', 'resources/js/app.ts'])
     </head>
     <body>
-        <div id="example"></div>
+        <div id="public"></div>
     </body>
 </html>
