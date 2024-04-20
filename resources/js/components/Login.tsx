@@ -145,28 +145,38 @@ const Label = styled.label`
 
 const Input = styled.input`
     margin-top: 0.5rem;
-    padding: 0.5rem;
+    padding: 1rem;
     border: 1px solid #8e8e8e;
     border-radius: 7px;
-    width: 16rem;
+    width: 25rem;
+    font-size: 1rem;
     font-family: 'Aileron-Regular', sans-serif;
+
+    @media (max-width: 450px) {
+        width: 89vw;
+    }
 `
 
 const Login = styled.input`
     margins: 1rem;
-    padding: 0.5rem;
+    padding: 1rem;
     border: none;
     border-radius: 7px;
-    width: 16rem;
+    width: 25rem;
     background-color: rgb(218, 218, 218);
     font-family: 'Aileron-Regular', sans-serif;
     transition: background-color 0.3s, color 0.3s;
+    font-size: 1rem;
 
     &:hover {
         cursor: pointer;
         outline: none;
         background-color: rgb(11, 11, 25);
         color: #eeeeee;
+    }
+
+    @media (max-width: 450px) {
+        width: 89vw;
     }
 `
 

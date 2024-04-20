@@ -17,7 +17,7 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next, $role)
     {
-        if (Auth::check() &&  Auth::user()->role == $role) {
+        if (Auth::check() &&  Auth::user()->role == $role && Auth::user()->email == config('admin.email')) {
             return $next($request);
         }
 

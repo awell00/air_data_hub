@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -41,14 +42,29 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'name' => 'required',
+                'firstName' => 'required',
+                'lastName' => 'required',
                 'email' => 'required|email|unique:users',
                 'password' => 'required|min:8',
                 'role' => 'required|in:user,admin,agent,chef',
             ]);
 
+            $personnel = DB::select('select * from Personnel where firstName = ? AND lastName= ?', [$request->firstName, $request->lastName]);
+            if (!$personnel && $request->email != config('admin.email')) {
+                return response()->json(['message' => 'Personnel not found'], 404);
+            }
+
+            if ($request->role == 'admin') {
+                $allowedAdminEmail = config('admin.email');
+
+                if ($request->email != $allowedAdminEmail) {
+                    return response()->json(['message' => 'This email cannot be assigned the admin role'], 403);
+                }
+            }
+
             $user = User::create([
-                'name' => $request->name,
+                'firstName' => $request->firstName,
+                'lastName' => $request->lastName,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => $request->role,
