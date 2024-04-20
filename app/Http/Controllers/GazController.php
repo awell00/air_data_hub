@@ -9,7 +9,8 @@ class GazController extends Controller
 {
     public function getGazData()
     {
-        $gaz = DB::select('SELECT
+        $gaz = DB::select('
+SELECT
     Data.ppmValue,
     Gases.formulaGas,
     Sensors.latSensor,
@@ -36,6 +37,12 @@ FROM
         GROUP BY
             Gases.idGas
     ) as MaxValues ON Gases.idGas = MaxValues.idGas;');
+        return response()->json($gaz);
+    }
+
+    public function gasTypes()
+    {
+        $gaz = DB::select('SELECT * FROM Gases');
         return response()->json($gaz);
     }
 }

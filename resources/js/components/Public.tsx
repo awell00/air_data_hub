@@ -10,7 +10,7 @@ import styled from 'styled-components';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import { BrowserRouter as Router } from 'react-router-dom';
 
-type GasType = 'NH3' | 'CO2 bio' | 'PFC';
+type GasType = 'NH3' | 'CO2 bio' | 'PFC' | 'CO2 non bio' | 'CH4' | 'HFC' | 'N2O' | 'NH3' | 'PFC' | 'SF6';
 type Coordinate = [number, number];
 type Zoom = number;
 
@@ -38,14 +38,15 @@ const App: React.FC = () => {
     const [lat, setLat] = useState(0);
     const [lng, setLng] = useState(0);
     const [prevMapStyle, setPrevMapStyle] = useState('')
-    const [selectedGas, setSelectedGas] = useState<GasType>('NH3');
-    const [currentZoom, setCurrentZoom] = useState<Zoom>(1.7);
+    const [selectedGas, setSelectedGas] = useState<GasType | ''>('');
+    const [currentZoom, setCurrentZoom] = useState<Zoom>(1.2);
     const [mapLoaded, setMapLoaded] = useState(false);
-    const [gasColors, setGasColors] = useState<string[]>(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)']);
+    const [gasColors, setGasColors] = useState<string[]>();
     const textElementTitle1 = document.getElementsByClassName('title1');
     const textElementTitle2 = document.getElementsByClassName('title2');
     const textElement3 = document.getElementsByClassName('button');
     const geocoderAddedRef = useRef(false);
+
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
@@ -69,7 +70,7 @@ const App: React.FC = () => {
                 });
 
                 const ppm = filteredData.map((item: {ppmValue: number, max_ppmValue: number}) => {
-                    return (item.ppmValue/item.max_ppmValue) * 100
+                    return (item.ppmValue/item.max_ppmValue)
                 })
 
                 setPpm(ppm);
@@ -95,7 +96,7 @@ const App: React.FC = () => {
             }
 
             setZoom(Math.min(width, height) / divisor);
-            if (currentZoom == 1.7) {
+            if (currentZoom == 1.2) {
                 map.current?.setZoom(zoomValue);
             }
 
@@ -127,7 +128,7 @@ const App: React.FC = () => {
                 map.current = new mapboxgl.Map({
                     container: mapContainer.current,
                     style: mapStyle,
-                    center: [lon, lat],
+                    center: center ? center : [lon, lat],
                     zoom: currentZoom
                 });
 
@@ -188,8 +189,10 @@ const App: React.FC = () => {
 
                 map.current?.on('move', () => {
                     const zoom = map.current?.getZoom();
-                    if (zoom) {
+                    const centerV = map.current?.getCenter();
+                    if (zoom && centerV) {
                         setCurrentZoom(zoom);
+                        setCenter([centerV.lng, centerV.lat]);
                     }
                 });
 
@@ -225,13 +228,12 @@ const App: React.FC = () => {
                                 properties: {
                                     id: index,
                                     radius: 5,
-                                    ppm: ppmValue[index],
+                                    ppm: ppmValue[index]
                                 }
                             }))
                         };
 
-
-
+                        console.log(ppmValue)
 
                         if (map.current) {
                             const layers = map.current.getStyle().layers;
@@ -473,20 +475,29 @@ const App: React.FC = () => {
     }, []);
 
     const handleGasChange = (value: string) => {
-        if (gasTypes.includes(value)) {
-            setSelectedGas(value as GasType);
+    if (gasTypes.includes(value)) {
+        setSelectedGas(value as GasType);
 
-            if (selectedGas === 'NH3') {
-                setGasColors(['rgba(235,255,235,0)', 'rgb(204,255,204)', 'rgb(153,255,153)', 'rgb(102,255,102)', 'rgb(51,255,51)', 'rgb(0,255,0)'])
-            } else if (selectedGas === 'CO2 bio') {
-                setGasColors(['rgba(255,235,235,0)', 'rgb(255,204,204)', 'rgb(255,153,153)', 'rgb(255,102,102)', 'rgb(255,51,51)', 'rgb(255,0,0)'])
-            } else if (selectedGas === 'PFC') {
-                setGasColors(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)'])
-            }
-        } else {
-            console.error(`Invalid gas type: ${value}`);
+        if (value === 'NH3') {
+            setGasColors(['rgba(235,255,235,0)', 'rgb(204,255,204)', 'rgb(153,255,153)', 'rgb(102,255,102)', 'rgb(51,255,51)', 'rgb(0,255,0)'])
+        } else if (value === 'CO2 bio') {
+            setGasColors(['rgba(255,235,235,0)', 'rgb(255,204,204)', 'rgb(255,153,153)', 'rgb(255,102,102)', 'rgb(255,51,51)', 'rgb(255,0,0)'])
+        } else if (value === 'PFC') {
+            setGasColors(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)'])
+        } else if (value === 'CO2 non bio') {
+            setGasColors(['rgba(235,235,255,0)', 'rgb(204,204,255)', 'rgb(153,153,255)', 'rgb(102,102,255)', 'rgb(51,51,255)', 'rgb(0,0,255)'])
+        } else if (value === 'CH4') {
+            setGasColors(['rgba(255,255,235,0)', 'rgb(255,255,204)', 'rgb(255,255,153)', 'rgb(255,255,102)', 'rgb(255,255,51)', 'rgb(255,255,0)'])
+        } else if (value === 'HFC') {
+            setGasColors(['rgba(255,235,255,0)', 'rgb(255,204,255)', 'rgb(255,153,255)', 'rgb(255,102,255)', 'rgb(255,51,255)', 'rgb(255,0,255)'])
+        } else if (value === 'N2O') {
+            setGasColors(['rgba(235,235,235,0)', 'rgb(204,204,204)', 'rgb(153,153,153)', 'rgb(102,102,102)', 'rgb(51,51,51)', 'rgb(0,0,0)'])
         }
-    };
+
+    } else {
+        console.error(`Invalid gas type: ${value}`);
+    }
+};
 
     useEffect(() => {
         if (map.current) {
@@ -503,6 +514,7 @@ const App: React.FC = () => {
                 <Title className={`title1 ${colorClassTitle1}`} ref={titleRef}>AIR DATA HUB</Title>
                 <Title2 className={`title2 ${colorClassTitle2}`}>{t('FROM DATA-X')}</Title2>
                 <GasSelector onChange={e => handleGasChange(e.target.value)} className="gas-selector">
+                    <option value="" disabled selected>Select a gas</option>
                     {gasTypes.map(gasType => (
                         <option key={gasType} value={gasType}>{gasType}</option>
                     ))}
@@ -541,7 +553,7 @@ const GasSelector = styled.select`
     display: block;
     margin-left: 30px;
     padding: 10px 15px 10px 15px;
-    width: 80px;
+    width: 127px;
     border: none;
     border-radius: 10px;
     font-weight: 500;
@@ -583,7 +595,7 @@ const RightButton = styled.button`
 `;
 
 const Title = styled.h1`
-    font-size: 4vw;
+    font-size: 2.5rem;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     color: #eeeeee;
@@ -598,7 +610,7 @@ const Title = styled.h1`
 `
 
 const Title2 = styled.h2`
-    font-size: 1.5vw;
+    font-size: 1rem;
     font-family: "Montserrat", sans-serif;
     font-weight: 500;
     color: #eeeeee;
