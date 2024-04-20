@@ -66,13 +66,13 @@ const App: React.FC = () => {
                     </Label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)}/>
                 </Value>
-                <SignUp type="submit" value="Log in"/>
-                <Login>
+                <Login type="submit" value="Log in"/>
+                <Signup>
                     <label>
-                        Don't have an account?&nbsp;
+                        Don't have an account ?
                     </label>
                     <Link href="/signup">Sign up</Link>
-                </Login>
+                </Signup>
 
             </Form>
         </Container>
@@ -152,12 +152,13 @@ const Input = styled.input`
     font-family: 'Aileron-Regular', sans-serif;
 `
 
-const SignUp = styled.input`
+const Login = styled.input`
     margins: 1rem;
     padding: 0.5rem;
     border: none;
     border-radius: 7px;
     width: 16rem;
+    background-color: rgb(218, 218, 218);
     font-family: 'Aileron-Regular', sans-serif;
     transition: background-color 0.3s, color 0.3s;
 
@@ -169,7 +170,7 @@ const SignUp = styled.input`
     }
 `
 
-const Login = styled.div`
+const Signup = styled.div`
     font-family: 'Aileron-Regular', sans-serif;
     font-size: 0.8rem;
     margin-top: 1rem;

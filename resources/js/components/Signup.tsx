@@ -172,6 +172,7 @@ const SignUp = styled.input`
     border: none;
     border-radius: 7px;
     width: 16rem;
+    background-color: rgb(218, 218, 218);
     font-family: 'Aileron-Regular', sans-serif;
     transition: background-color 0.3s, color 0.3s;
 
