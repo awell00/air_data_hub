@@ -58,7 +58,7 @@ const App: React.FC = () => {
                     <Label>
                         Email
                     </Label>
-                    <Input type="text" value={email} onChange={e => setEmail(e.target.value)}/>
+                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)}/>
                 </Value>
                 <Value>
                     <Label>
