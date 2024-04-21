@@ -7,7 +7,8 @@ import styled from 'styled-components';
 
 const App: React.FC = () => {
 
-    const [username, setUsername] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
     const [isAdmin, setIsAdmin] = useState(('user'));
@@ -37,7 +38,8 @@ const App: React.FC = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    name: username,
+                    firstName: firstName,
+                    lastName: lastName,
                     email: email,
                     password: password,
                     role: isAdmin,
@@ -62,12 +64,20 @@ const App: React.FC = () => {
             </a>
 
             <Form onSubmit={handleSubmit}>
-                <Value>
-                    <Label>
-                        Username
-                    </Label>
-                    <Input type="text" value={username} onChange={e => setUsername(e.target.value)}/>
-                </Value>
+                <Name>
+                    <Value>
+                        <Label>
+                            First Name
+                        </Label>
+                        <InputName type="text" value={firstName} onChange={e => setFirstName(e.target.value)}/>
+                    </Value>
+                    <Value>
+                        <Label>
+                            Last Name
+                        </Label>
+                        <InputName type="text" value={lastName} onChange={e => setLastName(e.target.value)}/>
+                    </Value>
+                </Name>
                 <Value>
                     <Label>
                         Email
@@ -110,6 +120,19 @@ const AllTitle = styled.div`
     flex-direction: column;
     position: absolute;
     z-index: 1;
+`
+
+const Name = styled.div`
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 25rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 450px) {
+        width: 89vw;
+    /*    flex-direction: column;*/
+    }
 `
 
 const Title = styled.h1`
@@ -163,11 +186,25 @@ const Input = styled.input`
     border: 1px solid #8e8e8e;
     border-radius: 7px;
     width: 25rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-family: 'Aileron-Regular', sans-serif;
 
     @media (max-width: 450px) {
         width: 89vw;
+    }
+`
+
+const InputName = styled.input`
+    margin-top: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #8e8e8e;
+    border-radius: 7px;
+    width: 12rem;
+    font-size: 1rem;
+    font-family: 'Aileron-Regular', sans-serif;
+
+    @media (max-width: 450px) {
+        width: 43vw;
     }
 `
 

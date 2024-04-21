@@ -149,7 +149,7 @@ const Input = styled.input`
     border: 1px solid #8e8e8e;
     border-radius: 7px;
     width: 25rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-family: 'Aileron-Regular', sans-serif;
 
     @media (max-width: 450px) {
