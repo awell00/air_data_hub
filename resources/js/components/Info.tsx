@@ -139,6 +139,7 @@ const LogoutButton = styled.button`
     border: none;
     border-radius: 7px;
     background-color: rgb(218, 218, 218);
+    color: #0b0b19;
     font-family: 'Aileron-Regular', sans-serif;
     transition: background-color 0.3s, color 0.3s;
     font-size: 1rem;

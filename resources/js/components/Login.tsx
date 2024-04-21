@@ -10,6 +10,7 @@ const App: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { t } = useTranslation();
+    const [isFormComplete, setFormComplete] = useState(false);
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
@@ -44,6 +45,14 @@ const App: React.FC = () => {
         }
     }
 
+    useEffect(() => {
+        if (email !== '' && password !== '') {
+            setFormComplete(true);
+        } else {
+            setFormComplete(false);
+        }
+    }, [email, password]);
+
     return (
         <Container>
             <a href="/">
@@ -66,7 +75,9 @@ const App: React.FC = () => {
                     </Label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)}/>
                 </Value>
-                <Login type="submit" value="Log in"/>
+                <LoginButton isFormComplete={isFormComplete}>
+                    <input type="submit" value="Log in" />
+                </LoginButton>
                 <Signup>
                     <label>
                         Don't have an account ?
@@ -157,28 +168,31 @@ const Input = styled.input`
     }
 `
 
-const Login = styled.input`
-    margins: 1rem;
-    padding: 1rem;
-    border: none;
-    border-radius: 7px;
-    width: 25rem;
-    background-color: rgb(218, 218, 218);
-    font-family: 'Aileron-Regular', sans-serif;
-    transition: background-color 0.3s, color 0.3s;
-    font-size: 1rem;
+const LoginButton = styled.div<{ isFormComplete: boolean }>`
+    input {
+        margins: 1rem;
+        padding: 1rem;
+        border: none;
+        border-radius: 7px;
+        width: 25rem;
+        background-color: ${props => props.isFormComplete ? 'rgb(11, 11, 25)' : 'rgb(218, 218, 218)'};
+        color: ${props => props.isFormComplete ? '#eeeeee' : '#0b0b19'};
+        font-family: 'Aileron-Regular', sans-serif;
+        transition: background-color 0.3s, color 0.3s;
+        font-size: 1rem;
 
-    &:hover {
-        cursor: pointer;
-        outline: none;
-        background-color: rgb(11, 11, 25);
-        color: #eeeeee;
-    }
+        &:hover {
+            cursor: pointer;
+            outline: none;
+            background-color: rgb(11, 11, 25);
+            color: #eeeeee;
+        }
 
-    @media (max-width: 450px) {
-        width: 89vw;
+        @media (max-width: 450px) {
+            width: 89vw;
+        }
     }
-`
+`;
 
 const Signup = styled.div`
     font-family: 'Aileron-Regular', sans-serif;
