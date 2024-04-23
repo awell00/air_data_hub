@@ -643,9 +643,9 @@ const Search = styled.div`
         width: 100%;
     }
 
-    @media (max-width: 375px) {
+    @media (max-width: 450px) {
         height: 85%;
-        gap: 500px;
+        gap: 70vh;
         pointer-events: none;
         justify-content: center;
         flex-direction: column;
