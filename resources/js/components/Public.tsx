@@ -616,10 +616,12 @@ const GasSelector = styled.select`
     color: #0b0b19;
     background-color: white;
     box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
-
+    -webkit-appearance: none;
+    -moz-appearance: none;
 
     @media (max-width: 768px) {
         margin-left: 10px;
+        pointer-events: all;
     }
 
     @media (max-width: 375px) {
@@ -637,6 +639,7 @@ const Search = styled.div`
 
         justify-content: center;
         position: fixed;
+        pointer-events: none;
         padding: 30px;
         bottom: 20px;
         left: 0;
