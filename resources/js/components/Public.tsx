@@ -185,6 +185,7 @@ const App: React.FC = () => {
                         thirdChild.style.display = 'flex';
                         thirdChild.style.alignItems = 'center';
                         thirdChild.style.justifyContent = 'center';
+                        thirdChild.style.fontSize = '16px';
 
                         thirdChild.style.transition = 'background-color 1s ease';
 
@@ -603,13 +604,11 @@ const GasSelector = styled.select`
 
     @media (max-width: 768px) {
         margin-left: 10px;
-        display: none;
     }
 
     @media (max-width: 375px) {
         margin-left: 0;
         margin-top: 20px;
-        display: none;
     }
 `
 
@@ -621,7 +620,7 @@ const Search = styled.div`
         justify-content: center;
         position: fixed;
         padding: 30px;
-        bottom: 140px;
+        bottom: 60px;
         left: 0;
         width: 100%;
     }
