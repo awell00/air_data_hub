@@ -603,11 +603,13 @@ const GasSelector = styled.select`
 
     @media (max-width: 768px) {
         margin-left: 10px;
+        display: none;
     }
 
     @media (max-width: 375px) {
         margin-left: 0;
         margin-top: 20px;
+        display: none;
     }
 `
 
@@ -619,7 +621,7 @@ const Search = styled.div`
         justify-content: center;
         position: fixed;
         padding: 30px;
-        bottom: 60px;
+        bottom: 140px;
         left: 0;
         width: 100%;
     }
