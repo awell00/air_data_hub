@@ -10,7 +10,7 @@ import styled from 'styled-components';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import { BrowserRouter as Router } from 'react-router-dom';
 
-type GasType = 'NH3' | 'CO2 bio' | 'PFC' | 'CO2 non bio' | 'CH4' | 'HFC' | 'N2O' | 'NH3' | 'PFC' | 'SF6';
+type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'NH3' | 'PFC' | 'SF6';
 type Coordinate = [number, number];
 type Zoom = number;
 
@@ -30,7 +30,7 @@ const App: React.FC = () => {
     const [styleChangedOnce, setStyleChangedOnce] = useState(false);
     const [zoomValue, setZoom] = useState<Zoom>(3);
     const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/standard');
-    const titleRef = useRef<HTMLHeadingElement | null>(null); // Add this line
+    const titleRef = useRef<HTMLHeadingElement | null>(null);
     const timeoutRef = useRef<number | null>(null);
     const [coordinatesValue, setCoordinates] = useState([]);
     const [ppmValue, setPpm] = useState<number[]>([])
@@ -39,13 +39,15 @@ const App: React.FC = () => {
     const [lng, setLng] = useState(0);
     const [prevMapStyle, setPrevMapStyle] = useState('')
     const [selectedGas, setSelectedGas] = useState<GasType | ''>('');
-    const [currentZoom, setCurrentZoom] = useState<Zoom>(1.2);
+    const [currentZoom, setCurrentZoom] = useState<Zoom>(0.8);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [gasColors, setGasColors] = useState<string[]>();
     const textElementTitle1 = document.getElementsByClassName('title1');
     const textElementTitle2 = document.getElementsByClassName('title2');
     const textElement3 = document.getElementsByClassName('button');
     const geocoderAddedRef = useRef(false);
+    const selectRef = useRef<HTMLSelectElement | null>(null);
+    const [title, setTitle] = useState("AIR DATA HUB");
 
 
     useEffect(() => {
@@ -151,9 +153,9 @@ const App: React.FC = () => {
                     map.current?.flyTo({
                         center: [2, 46],
                         zoom: 0.8,
-                        speed: 2 // Augmentez cette valeur pour rendre la transition plus rapide
+                        speed: 2
                     });
-                });// Check if the geocoder is correctly created
+                });
 
                 geocoder.on('result', function(e) {
                     map.current?.flyTo({
@@ -162,7 +164,7 @@ const App: React.FC = () => {
                     });
                 });
 
-                const geocoderDiv = document.getElementById('all-title-div');
+                const geocoderDiv = document.getElementById('search');
                 const gasSelector = document.querySelector('.gas-selector');
 
                 if (geocoderDiv && gasSelector && !geocoderAddedRef.current) {
@@ -173,14 +175,16 @@ const App: React.FC = () => {
                     const titleContainerWidth = titleContainer ? titleContainer.offsetWidth : 0;
 
                     if (geocoderDiv.firstChild) {
-                        const thirdChild = geocoderDiv.children[2] as HTMLElement;
-                        thirdChild.style.width = `${titleContainerWidth}px`;
-                        thirdChild.style.display = 'block';
-                        thirdChild.style.margin = '30px';
+                        const thirdChild = geocoderDiv.children[0] as HTMLElement;
 
                         thirdChild.style.color = '#0b0b19';
-                        thirdChild.style.backgroundColor = '#eeeeee';
+                        /*thirdChild.style.backgroundColor = '#eeeeee';*/
                         thirdChild.style.borderRadius = '10px';
+
+                        thirdChild.style.fontFamily = 'Aileron-SemiBold';
+                        thirdChild.style.display = 'flex';
+                        thirdChild.style.alignItems = 'center';
+                        thirdChild.style.justifyContent = 'center';
 
                         thirdChild.style.transition = 'background-color 1s ease';
 
@@ -232,8 +236,6 @@ const App: React.FC = () => {
                                 }
                             }))
                         };
-
-                        console.log(ppmValue)
 
                         if (map.current) {
                             const layers = map.current.getStyle().layers;
@@ -476,15 +478,21 @@ const App: React.FC = () => {
 
     const handleGasChange = (value: string) => {
     if (gasTypes.includes(value)) {
+        if (value === "CO2 non bio") {
+            value = "CO2nb";
+        } else if (value === "CO2 bio") {
+            value = "CO2b";
+        }
+
         setSelectedGas(value as GasType);
 
         if (value === 'NH3') {
             setGasColors(['rgba(235,255,235,0)', 'rgb(204,255,204)', 'rgb(153,255,153)', 'rgb(102,255,102)', 'rgb(51,255,51)', 'rgb(0,255,0)'])
-        } else if (value === 'CO2 bio') {
+        } else if (value === 'CO2b') {
             setGasColors(['rgba(255,235,235,0)', 'rgb(255,204,204)', 'rgb(255,153,153)', 'rgb(255,102,102)', 'rgb(255,51,51)', 'rgb(255,0,0)'])
         } else if (value === 'PFC') {
             setGasColors(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)'])
-        } else if (value === 'CO2 non bio') {
+        } else if (value === 'CO2nb') {
             setGasColors(['rgba(235,235,255,0)', 'rgb(204,204,255)', 'rgb(153,153,255)', 'rgb(102,102,255)', 'rgb(51,51,255)', 'rgb(0,0,255)'])
         } else if (value === 'CH4') {
             setGasColors(['rgba(255,255,235,0)', 'rgb(255,255,204)', 'rgb(255,255,153)', 'rgb(255,255,102)', 'rgb(255,255,51)', 'rgb(255,255,0)'])
@@ -505,22 +513,51 @@ const App: React.FC = () => {
         }
     }, [mapStyle]);
 
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth <= 450) {
+                setTitle("ADH");
+            } else {
+                setTitle("AIR DATA HUB");
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Call the function initially to set the title based on the initial window size
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     const colorClassTitle1 = mapLoaded ? 'title1' : 'white-color';
     const colorClassTitle2 = mapLoaded ? 'title2' : 'white-color';
 
     return (
         <Container>
             <AllTitle id="all-title-div">
-                <Title className={`title1 ${colorClassTitle1}`} ref={titleRef}>AIR DATA HUB</Title>
-                <Title2 className={`title2 ${colorClassTitle2}`}>{t('FROM DATA-X')}</Title2>
-                <GasSelector onChange={e => handleGasChange(e.target.value)} className="gas-selector">
-                    <option value="" disabled selected>Select a gas</option>
-                    {gasTypes.map(gasType => (
-                        <option key={gasType} value={gasType}>{gasType}</option>
-                    ))}
-                </GasSelector>
+                <Title className={`title1 ${colorClassTitle1}`} ref={titleRef}>{title}</Title><Search id="search">
+                <GasSelector ref={selectRef} onChange={e => handleGasChange(e.target.value)} className="gas-selector">
+                        <option value="" disabled selected>{t('Gases')}</option>
+                        {gasTypes.map(gasType => {
+                            let displayValue = gasType;
+                            if (gasType === "CO2 non bio") {
+                                displayValue = "CO2nb";
+                            } else if (gasType === "CO2 bio") {
+                                displayValue = "CO2b";
+                            }
+                            return <option key={gasType} value={displayValue}>{displayValue}</option>
+                        })}
+                    </GasSelector>
+                </Search>
+
+
+                <a href="/login" className="button-div"><RightButton className="button">{t('Log in')}</RightButton></a>
+
+
             </AllTitle>
-            <a href="/login"><RightButton className="button">{t('Log in')}</RightButton></a>
+
+
             <Map ref={mapContainer} className={mapLoaded ? 'map-visible' : 'map-hidden'}/>
         </Container>
     );
@@ -544,40 +581,66 @@ document.addEventListener('DOMContentLoaded', renderApp);
 
 const AllTitle = styled.div`
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+
+    width: 100%;
     position: absolute;
     z-index: 1;
+    padding: 30px;
 `
 
 const GasSelector = styled.select`
     display: block;
-    margin-left: 30px;
     padding: 10px 15px 10px 15px;
-    width: 127px;
+    width: 100px;
     border: none;
     border-radius: 10px;
-    font-weight: 500;
     font-size: 14px;
     font-family: 'Aileron-SemiBold', sans-serif;
     color: #0b0b19;
-    background-color: #eeee;
+    background-color: white;
     box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
+
+    @media (max-width: 768px) {
+        margin-left: 10px;
+    }
+
+    @media (max-width: 375px) {
+        margin-left: 0;
+        margin-top: 20px;
+    }
+`
+
+const Search = styled.div`
+    display: flex;
+    justify-content: space-between;
+
+    @media (max-width: 768px) {
+        justify-content: center;
+        position: fixed;
+        padding: 30px;
+        bottom: 60px;
+        left: 0;
+        width: 100%;
+    }
+
+    @media (max-width: 375px) {
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+    }
 `
 
 
 const RightButton = styled.button`
-    position: absolute;
-    right: 30px;
-    top: 34px;
-    padding: 12px 15px 12px 15px;
-    background: #eeeeee;
+    padding: 12px 18px;
+    background: white;
     color: #0b0b19;
     border: none;
     font-family: 'Aileron-SemiBold', sans-serif;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
-    z-index: 1;
     box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
     text-decoration: none;
 
@@ -587,39 +650,15 @@ const RightButton = styled.button`
         background: #c6c6c6;
         color: #0b0b19;
     }
-
-    @media (max-width: 450px) {
-        font-size: 14px;
-        padding: 10px 12px 10px 12px;
-    }
 `;
 
 const Title = styled.h1`
-    font-size: 2.5rem;
+    font-size: 1.2rem;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
-    color: #eeeeee;
-    padding-left: 30px;
-    padding-top: 30px;
+    color: white;
     white-space: nowrap;
     text-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
-
-    @media (max-width: 450px) {
-        font-size: 7vw;
-    }
-`
-
-const Title2 = styled.h2`
-    font-size: 1rem;
-    font-family: "Montserrat", sans-serif;
-    font-weight: 500;
-    color: #eeeeee;
-    padding-left: 30px;
-    text-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
-
-    @media (max-width: 450px) {
-        font-size: 3vw;
-    }
 `
 
 const Translate = styled.h2`

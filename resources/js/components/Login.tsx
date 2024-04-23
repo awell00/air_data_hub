@@ -58,7 +58,6 @@ const App: React.FC = () => {
             <a href="/">
                 <AllTitle>
                     <Title>AIR DATA HUB</Title>
-                    <Title2>{t('FROM DATA-X')}</Title2>
                 </AllTitle>
             </a>
 
@@ -104,35 +103,20 @@ const renderApp = () => {
 
 const AllTitle = styled.div`
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+
+    width: 100%;
     position: absolute;
     z-index: 1;
+    padding: 30px;
 `
 
 const Title = styled.h1`
-    font-size: 2.5rem;
+    font-size: 1.2rem;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     color: #0b0b19;
-    padding-left: 30px;
-    padding-top: 30px;
     white-space: nowrap;
-
-    @media (max-width: 450px) {
-        font-size: 7vw;
-    }
-`
-
-const Title2 = styled.h2`
-    font-size: 1rem;
-    font-family: "Montserrat", sans-serif;
-    font-weight: 500;
-    color: #0b0b19;
-    padding-left: 30px;
-
-    @media (max-width: 450px) {
-        font-size: 3vw;
-    }
 `
 
 const Form = styled.form`

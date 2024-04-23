@@ -11,14 +11,16 @@ i18n
                 translation: {
                     "FROM DATA-X": "FROM DATA-X",
                     "Log in": "Log in",
-                    "Search a City...": "Search a City..."
+                    "Search a City...": "Search a City...",
+                    "Gases": "Gases",
                 }
             },
             fr: {
                 translation: {
                     "FROM DATA-X": "PAR DATA-X",
                     "Log in": "Connexion",
-                    "Search for a city...": "Rechercher une ville..."
+                    "Search for a city...": "Rechercher une ville...",
+                    "Gases": "Gaz",
                 }
             }
         },
