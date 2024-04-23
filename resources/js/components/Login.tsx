@@ -11,6 +11,7 @@ const App: React.FC = () => {
     const [password, setPassword] = useState('');
     const { t } = useTranslation();
     const [isFormComplete, setFormComplete] = useState(false);
+    const [title, setTitle] = useState("AIR DATA HUB");
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
@@ -53,11 +54,28 @@ const App: React.FC = () => {
         }
     }, [email, password]);
 
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth <= 450) {
+                setTitle("ADH");
+            } else {
+                setTitle("AIR DATA HUB");
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Call the function initially to set the title based on the initial window size
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     return (
         <Container>
             <a href="/">
                 <AllTitle>
-                    <Title>AIR DATA HUB</Title>
+                    <Title >{title}</Title>
                 </AllTitle>
             </a>
 
@@ -70,18 +88,18 @@ const App: React.FC = () => {
                 </Value>
                 <Value>
                     <Label>
-                        Password
+                        {t("Password")}
                     </Label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)}/>
                 </Value>
                 <LoginButton isFormComplete={isFormComplete}>
-                    <input type="submit" value="Log in" />
+                    <input type="submit" value={t("Log in")} />
                 </LoginButton>
                 <Signup>
                     <label>
-                        Don't have an account ?
+                        {t("Don't have an account?")}
                     </label>
-                    <Link href="/signup">Sign up</Link>
+                    <Link href="/signup">{t("Sign up")}</Link>
                 </Signup>
 
             </Form>
@@ -113,6 +131,7 @@ const AllTitle = styled.div`
 
 const Title = styled.h1`
     font-size: 1.2rem;
+    margin-top: 8px;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     color: #0b0b19;

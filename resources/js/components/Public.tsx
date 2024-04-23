@@ -1,91 +1,222 @@
-import React, { useState, useLayoutEffect, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from "react-dom/client";
+import { z } from 'zod';
+import { debounce } from 'lodash';
+
 import '../../css/app.css';
+
 import Radar from 'radar-sdk-js';
-import 'radar-sdk-js/dist/radar.css';
 import mapboxgl from 'mapbox-gl';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
+
 import styled from 'styled-components';
-import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import { BrowserRouter as Router } from 'react-router-dom';
 
-type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'NH3' | 'PFC' | 'SF6';
+// Types and interfaces
+type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
 type Coordinate = [number, number];
 type Zoom = number;
 
-interface Expression {
-    [index: number]: string | number | Expression;
-}
+const GasDataSchema = z.array(z.object({
+    formulaGas: z.string(),
+    latSensor: z.number(),
+    longSensor: z.number(),
+    ppmValue: z.number(),
+    max_ppmValue: z.number(),
+}));
 
+const GasTypeSchema = z.array(z.object({
+    formulaGas: z.string(),
+}));
+
+// Initialization API
 Radar.initialize(import.meta.env.VITE_RADAR);
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX;
 
 const App: React.FC = () => {
+    // Constants
+    const zoomMin = 0.001678693092394923;
+    const geocoderDiv = document.getElementById('search');
+    const gasSelector = document.querySelector('.gas-selector');
+
+    const gasTypeMap: { [key: string]: string } = {
+        "CO2nb": "CO2 non bio",
+        "CO2b": "CO2 bio"
+    };
+
+    const gasColorMap: { [key: string]: string[] }  = {
+        'NH3': ['rgba(235,255,235,0)', 'rgb(204,255,204)', 'rgb(153,255,153)', 'rgb(102,255,102)', 'rgb(51,255,51)', 'rgb(0,255,0)'],
+        'CO2 non bio': ['rgba(255,235,235,0)', 'rgb(255,204,204)', 'rgb(255,153,153)', 'rgb(255,102,102)', 'rgb(255,51,51)', 'rgb(255,0,0)'],
+        'PFC': ['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)'],
+        'CO2 bio': ['rgba(235,235,255,0)', 'rgb(204,204,255)', 'rgb(153,153,255)', 'rgb(102,102,255)', 'rgb(51,51,255)', 'rgb(0,0,255)'],
+        'CH4': ['rgba(255,255,235,0)', 'rgb(255,255,204)', 'rgb(255,255,153)', 'rgb(255,255,102)', 'rgb(255,255,51)', 'rgb(255,255,0)'],
+        'HFC': ['rgba(255,235,255,0)', 'rgb(255,204,255)', 'rgb(255,153,255)', 'rgb(255,102,255)', 'rgb(255,51,255)', 'rgb(255,0,255)'],
+        'N2O': ['rgba(235,235,235,0)', 'rgb(204,204,204)', 'rgb(153,153,153)', 'rgb(102,102,102)', 'rgb(51,51,51)', 'rgb(0,0,0)']
+    };
+
+    // Refs
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
-    const [center, setCenter] = useState<Coordinate | undefined>();
+    const titleRef = useRef<HTMLHeadingElement | null>(null);
+    const geocoderAddedRef = useRef(false);
+    const selectRef = useRef<HTMLSelectElement | null>(null);
+
+    // Translation
     const { t } = useTranslation();
-    const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+
+    // Map related states
+    const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/standard');
+    const [currentZoom, setCurrentZoom] = useState<Zoom>(0.8);
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [center, setCenter] = useState<Coordinate | undefined>();
+
+    // Style related states
     const [styleChanged, setStyleChanged] = useState(false);
     const [styleChangedOnce, setStyleChangedOnce] = useState(false);
     const [zoomValue, setZoom] = useState<Zoom>(3);
-    const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/standard');
-    const titleRef = useRef<HTMLHeadingElement | null>(null);
-    const timeoutRef = useRef<number | null>(null);
-    const [coordinatesValue, setCoordinates] = useState([]);
-    const [ppmValue, setPpm] = useState<number[]>([])
-    const [city, setCity] = useState('');
-    const [lat, setLat] = useState(0);
-    const [lng, setLng] = useState(0);
-    const [prevMapStyle, setPrevMapStyle] = useState('')
+
+    // Data related states
+    const [coordinatesValue, setCoordinates] = useState<number[][]>([]);
+    const [ppmValue, setPpm] = useState<number[]>([]);
     const [selectedGas, setSelectedGas] = useState<GasType | ''>('');
-    const [currentZoom, setCurrentZoom] = useState<Zoom>(0.8);
-    const [mapLoaded, setMapLoaded] = useState(false);
     const [gasColors, setGasColors] = useState<string[]>();
-    const textElementTitle1 = document.getElementsByClassName('title1');
-    const textElementTitle2 = document.getElementsByClassName('title2');
-    const textElement3 = document.getElementsByClassName('button');
-    const geocoderAddedRef = useRef(false);
-    const selectRef = useRef<HTMLSelectElement | null>(null);
+    const [gasTypes, setGasTypes] = useState<string[]>([]);
+
+    // Title related states
     const [title, setTitle] = useState("AIR DATA HUB");
+    const colorClassTitle = mapLoaded ? 'title' : 'white-color';
 
+    // Elements
+    const titleElement = document.getElementsByClassName('title');
+    const buttonElement = document.getElementsByClassName('button');
 
+    // This useEffect hook is used to set the language of the application based on the user's browser language.
+    // It runs once when the component is mounted.
     useEffect(() => {
-        const browserLang = navigator.language.split('-')[0];
-        i18n.changeLanguage(browserLang);
+        try {
+            // Get the language from the browser
+            const browserLang = navigator.language.split('-')[0];
+            // Change the language of the application to match the browser's language
+            i18n.changeLanguage(browserLang)
+                .then(() => console.log(`Language set to ${browserLang}`))
+                .catch((error) => console.error(`Error setting language to ${browserLang}:`, error));
+        } catch (error) {
+            console.error('Error getting browser language:', error);
+        }
     }, []);
 
+    // This useEffect hook is used to handle window resize events.
+    // It updates the title of the application based on the window width.
+    // It runs once when the component is mounted and cleans up the event listener when the component is unmounted.
     useEffect(() => {
+        // Define a debounced function that sets the title based on the window width
+        const handleResize = debounce(() => {
+            setTitle(window.innerWidth <= 450 ? "ADH" : "AIR DATA HUB");
+        }, 250);
 
-        fetch( '/api/gaz', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
-            },
-        })
-            .then(response => response.json())
-            .then(data => {
-                const filteredData = data.filter((item: {formulaGas: string}) => item.formulaGas === selectedGas);
+        // Add the resize event listener
+        window.addEventListener('resize', handleResize);
+        // Call the handleResize function immediately to set the initial title
+        handleResize();
 
-                const coords = filteredData.map((item: {latSensor: number, longSensor: number})  => {
-                    return [item.longSensor, item.latSensor];
+        // Return a cleanup function that will be called when the component is unmounted
+        return () => {
+            // Cancel any pending execution of handleResize
+            handleResize.cancel();
+            // Remove the resize event listener
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    // This useEffect hook is used to fetch gas data from the '/api/gaz' endpoint.
+    // It runs whenever the selectedGas state changes.
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch('/api/gaz', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+                    },
                 });
 
-                const ppm = filteredData.map((item: {ppmValue: number, max_ppmValue: number}) => {
-                    return (item.ppmValue/item.max_ppmValue)
-                })
+                const data = await response.json();
+                // Validate the data using the GasDataSchema
+                const validData = GasDataSchema.parse(data);
+
+                // Filter the data to only include items where the formulaGas matches the selectedGas
+                const filteredData = validData.filter(item => item.formulaGas === selectedGas);
+                // Map the filtered data to an array of coordinates
+                const coords = filteredData.map(item => [item.longSensor, item.latSensor]);
+                // Map the filtered data to an array of ppm values normalized by the max_ppmValue
+                const ppm = filteredData.map(item => item.ppmValue/item.max_ppmValue);
 
                 setPpm(ppm);
                 setCoordinates(coords);
+            } catch (error) {
+                console.error('Error fetching data from /gaz:', error);
+            }
+        };
 
-            })
-            .catch(error => console.error('Error fetching data from /gaz:', error));
-    }, [selectedGas]);
+        fetchData().catch(error => console.error('Error in fetchData:', error));
+    }, [selectedGas, setPpm, setCoordinates, GasDataSchema]);
 
+    // This useEffect hook is used to fetch gas types from the '/api/gasTypes' endpoint.
+    // It runs once when the component is mounted.
+    useEffect(() => {
+        const fetchGasTypes = async () => {
+            try {
+                const response = await fetch('/api/gasTypes', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    console.error('Network response was not ok');
+                    return;
+                }
+
+                const data = await response.json();
+                // Validate the data using the GasTypeSchema
+                const validatedData = GasTypeSchema.parse(data);
+                // Map the validated data to an array of gas types
+                const gasTypes = validatedData.map((item: {formulaGas: string}) => item.formulaGas);
+
+                setGasTypes(gasTypes);
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    console.error('Validation error:', error.errors);
+                } else {
+                    console.error('Error fetching gas types:', error);
+                }
+            }
+        };
+
+        fetchGasTypes().catch(error => console.error('Error in fetchGasTypes:', error));
+    }, []);
+
+    // This function is used to handle changes in the gas type selection.
+    // It updates the selectedGas and gasColors states based on the selected value.
+    const handleGasChange = (value: string) => {
+        // Map the value to a gas type if it exists in the gasTypeMap
+        value = gasTypeMap[value] || value;
+
+        // If the value is included in the gasTypes, update the selectedGas and gasColors states
+        if (gasTypes.includes(value)) {
+            setSelectedGas(value as GasType);
+            setGasColors(gasColorMap[value] || ['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)']);
+        } else {
+            console.error(`Invalid gas type: ${value}`);
+        }
+    };
 
     useEffect(() => {
-        setMapLoaded(false);
-        const handleResize = () => {
+        const handleResize = debounce(() => {
             const width = window.innerWidth * 0.8;
             const height = window.innerHeight * 0.8;
             map.current?.resize();
@@ -101,8 +232,7 @@ const App: React.FC = () => {
             if (currentZoom == 1.2) {
                 map.current?.setZoom(zoomValue);
             }
-
-        };
+        }, 250);
 
         window.addEventListener('resize', handleResize);
 
@@ -126,226 +256,208 @@ const App: React.FC = () => {
                     lon = 2.2137;
                 }
 
-                mapboxgl.accessToken = import.meta.env.VITE_MAPBOX;
+                setupMap(lat, lon);
+            } catch (error) {
+                console.error('Error fetching IP info:', error);
+            }
+        }
+
+        const setupMap = (lat: number, lon: number) => {
+            if (mapContainer.current) {
                 map.current = new mapboxgl.Map({
                     container: mapContainer.current,
                     style: mapStyle,
                     center: center ? center : [lon, lat],
                     zoom: currentZoom
                 });
+            }
 
-                const geocoder = new MapboxGeocoder({
-                    accessToken: mapboxgl.accessToken,
-                    flyTo: {
-                        bearing: 0,
-                        speed: 2,
-                        curve: 1,
-                        easing: function (t) {
-                            return t;
-                        }
-                    },
-                    mapboxgl: mapboxgl,
-                    marker: false,
-                    placeholder: t('Search for a city...'),
-                });
+            setupGeocoder();
+            setupMapEvents();
+        }
 
-                geocoder.on('clear', function() {
-                    map.current?.flyTo({
-                        center: [2, 46],
-                        zoom: 0.8,
-                        speed: 2
-                    });
-                });
-
-                geocoder.on('result', function(e) {
-                    map.current?.flyTo({
-                        center: e.result.geometry.coordinates,
-                        zoom: 8
-                    });
-                });
-
-                const geocoderDiv = document.getElementById('search');
-                const gasSelector = document.querySelector('.gas-selector');
-
-                if (geocoderDiv && gasSelector && !geocoderAddedRef.current) {
-                    geocoderDiv.insertBefore(geocoder.onAdd(map.current), gasSelector);
-                    geocoderAddedRef.current = true;
-
-                    const titleContainer = document.querySelector('.title-container') as HTMLElement;
-                    const titleContainerWidth = titleContainer ? titleContainer.offsetWidth : 0;
-
-                    if (geocoderDiv.firstChild) {
-                        const thirdChild = geocoderDiv.children[0] as HTMLElement;
-
-                        thirdChild.style.color = '#0b0b19';
-                        thirdChild.style.borderRadius = '10px';
-
-                        thirdChild.style.fontFamily = 'Aileron-SemiBold';
-                        thirdChild.style.display = 'flex';
-                        thirdChild.style.alignItems = 'center';
-                        thirdChild.style.justifyContent = 'center';
-                        thirdChild.style.fontSize = '16px';
-
-
-                        thirdChild.style.transition = 'background-color 1s ease';
-
-                        const svgElement = thirdChild.querySelector('svg');
-
-                        if (window.innerWidth > 768) {
-                            if (svgElement) {
-                                svgElement.style.marginTop = '2.5px';
-                                svgElement.style.marginLeft = '3px';
-                            }
-                        } else {
-                            if (svgElement) {
-                                svgElement.style.marginTop = 'Opx'; // Adjust this value as needed
-                            }
-                        }
-
-
-
+        const setupGeocoder = () => {
+            const geocoder = new MapboxGeocoder({
+                accessToken: mapboxgl.accessToken,
+                flyTo: {
+                    bearing: 0,
+                    speed: 2,
+                    curve: 1,
+                    easing: function (t) {
+                        return t;
                     }
+                },
+                mapboxgl: mapboxgl,
+                marker: false,
+                placeholder: t('Search for a city...'),
+            });
+
+            geocoder.on('clear', function() {
+                map.current?.flyTo({
+                    center: [2, 46],
+                    zoom: 0.8,
+                    speed: 2
+                });
+            });
+
+            geocoder.on('result', function(e) {
+                map.current?.flyTo({
+                    center: e.result.geometry.coordinates,
+                    zoom: 8
+                });
+            });
+
+            if (geocoderDiv && gasSelector && !geocoderAddedRef.current) {
+                geocoderDiv.insertBefore(geocoder.onAdd(map.current!), gasSelector);
+                geocoderAddedRef.current = true;
+
+                if (geocoderDiv.firstChild) {
+                    const thirdChild = geocoderDiv.children[0] as HTMLElement;
+
+                    thirdChild.style.color = '#0b0b19';
+                    thirdChild.style.borderRadius = '10px';
+
+                    thirdChild.style.fontFamily = 'Aileron-SemiBold';
+                    thirdChild.style.display = 'flex';
+                    thirdChild.style.alignItems = 'center';
+                    thirdChild.style.justifyContent = 'center';
+                    thirdChild.style.fontSize = '16px';
+
+                    thirdChild.style.transition = 'background-color 1s ease';
                 }
-
-                map.current?.on('move', () => {
-                    const zoom = map.current?.getZoom();
-                    const centerV = map.current?.getCenter();
-                    if (zoom && centerV) {
-                        setCurrentZoom(zoom);
-                        setCenter([centerV.lng, centerV.lat]);
-                    }
-                });
-
-                map.current.on('load', () => {
-                    setMapLoaded(false);
-                    if (map.current) {
-                        map.current.setFog({
-                            color: 'rgb(186, 210, 235)',
-                            'high-color': 'rgb(36, 92, 223)',
-                            'horizon-blend': 0.006,
-                            'space-color': 'rgb(11,11,25)',
-                            "star-intensity": 0.23
-                        });
-
-                    }
-
-                    handleResize();
-
-
-                    const validCoordinates = coordinatesValue.filter(coordinate => coordinate !== undefined) as Coordinate[];
-
-                    if (ppmValue !== null) {
-                        // Create a GeoJSON feature collection
-                        const geojson: GeoJSON.FeatureCollection = {
-                            type: 'FeatureCollection',
-                            features: validCoordinates.map((coordinate, index) => ({
-                                type: 'Feature',
-                                geometry: {
-                                    type: 'Point',
-                                    coordinates: [coordinate[0], coordinate[1]],
-
-                                },
-                                properties: {
-                                    id: index,
-                                    radius: 5,
-                                    ppm: ppmValue[index]
-                                }
-                            }))
-                        };
-
-                        if (map.current) {
-                            const layers = map.current.getStyle().layers;
-                            let firstSymbolId;
-                            for (const layer of layers) {
-                                if (layer.type === 'symbol') {
-                                    firstSymbolId = layer.id;
-                                    break;
-                                }
-                            }
-
-                            if (map.current) {
-                                setMapLoaded(false);
-                                if (map.current.getSource('points')) {
-                                    (map.current?.getSource('points') as mapboxgl.GeoJSONSource).setData(geojson);
-                                } else {
-                                    // If the source 'points' does not exist, create it
-                                    map.current.addSource('points', {
-                                        type: 'geojson',
-                                        data: geojson
-                                    });
-
-                                    if (gasColors) {
-                                        map.current.addLayer({
-                                                id: 'heatmap',
-                                                type: 'heatmap',
-                                                source: 'points',
-                                                'layout': {},
-                                                paint: {
-                                                    'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
-                                                    'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
-
-                                                    'heatmap-color': [
-                                                        'interpolate',
-                                                        ['linear'],
-                                                        ['heatmap-density'],
-                                                        0,
-                                                        gasColors[0],
-                                                        0.2,
-                                                        gasColors[1],
-                                                        0.4,
-                                                        gasColors[2],
-                                                        0.6,
-                                                        gasColors[3],
-                                                        0.8,
-                                                        gasColors[4],
-                                                        1,
-                                                        gasColors[5]
-
-                                                    ],
-                                                    'heatmap-radius': [
-                                                        'interpolate',
-                                                        ['linear'],
-                                                        ['zoom'],
-                                                        2, 1,
-                                                        3, 2,
-                                                        4, 5,
-                                                        5, 10,
-                                                        6, 15,
-                                                        7, 20,
-                                                        8, 30,
-                                                        9, 40,
-                                                        10, 60,
-                                                        11, 100,
-                                                        12, 200,
-                                                        13, 300,
-                                                        14, 400,
-                                                        15, 500,
-                                                        16, 700,
-                                                    ],
-                                                    'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 20, 0]
-                                                }
-                                            },
-                                            firstSymbolId
-                                        );
-                                    }
-
-                                }
-                            }
-
-
-                        }
-                    }
-
-                    setTimeout(() => {
-                        setMapLoaded(true);
-                    }, 500);
-                });
-            } catch (error) {
-                console.error('Error fetching IP info:', error);
             }
         }
 
-        fetchData();
+        const setupMapEvents = () => {
+            map.current!.on('move', () => {
+                const zoom = map.current?.getZoom();
+                const centerV = map.current?.getCenter();
+                if (zoom && centerV) {
+                    setCurrentZoom(zoom);
+                    setCenter([centerV.lng, centerV.lat]);
+                }
+            });
+
+            map.current!.on('load', () => {
+                setMapLoaded(false);
+                if (map.current) {
+                    map.current.setFog({
+                        color: 'rgb(186, 210, 235)',
+                        'high-color': 'rgb(36, 92, 223)',
+                        'horizon-blend': 0.006,
+                        'space-color': 'rgb(11,11,25)',
+                        "star-intensity": 0.23
+                    });
+                }
+
+                handleResize();
+
+                const validCoordinates = coordinatesValue.filter(coordinate => coordinate !== undefined) as Coordinate[];
+
+                if (ppmValue !== null) {
+                    const geojson: GeoJSON.FeatureCollection = {
+                        type: 'FeatureCollection',
+                        features: validCoordinates.map((coordinate, index) => ({
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Point',
+                                coordinates: [coordinate[0], coordinate[1]],
+                            },
+                            properties: {
+                                id: index,
+                                radius: 5,
+                                ppm: ppmValue[index]
+                            }
+                        }))
+                    };
+
+                    if (map.current) {
+                        const layers = map.current.getStyle().layers;
+                        let firstSymbolId;
+                        for (const layer of layers) {
+                            if (layer.type === 'symbol') {
+                                firstSymbolId = layer.id;
+                                break;
+                            }
+                        }
+
+                        if (map.current) {
+                            setMapLoaded(false);
+                            if (map.current.getSource('points')) {
+                                (map.current?.getSource('points') as mapboxgl.GeoJSONSource).setData(geojson);
+                            } else {
+                                // If the source 'points' does not exist, create it
+                                map.current.addSource('points', {
+                                    type: 'geojson',
+                                    data: geojson
+                                });
+
+                                if (gasColors) {
+                                    map.current.addLayer({
+                                            id: 'heatmap',
+                                            type: 'heatmap',
+                                            source: 'points',
+                                            'layout': {},
+                                            paint: {
+                                                'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
+                                                'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
+
+                                                'heatmap-color': [
+                                                    'interpolate',
+                                                    ['linear'],
+                                                    ['heatmap-density'],
+                                                    0,
+                                                    gasColors[0],
+                                                    0.2,
+                                                    gasColors[1],
+                                                    0.4,
+                                                    gasColors[2],
+                                                    0.6,
+                                                    gasColors[3],
+                                                    0.8,
+                                                    gasColors[4],
+                                                    1,
+                                                    gasColors[5]
+
+                                                ],
+                                                'heatmap-radius': [
+                                                    'interpolate',
+                                                    ['linear'],
+                                                    ['zoom'],
+                                                    2, 1,
+                                                    3, 2,
+                                                    4, 5,
+                                                    5, 10,
+                                                    6, 15,
+                                                    7, 20,
+                                                    8, 30,
+                                                    9, 40,
+                                                    10, 60,
+                                                    11, 100,
+                                                    12, 200,
+                                                    13, 300,
+                                                    14, 400,
+                                                    15, 500,
+                                                    16, 700,
+                                                ],
+                                                'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 7, 1, 20, 0]
+                                            }
+                                        },
+                                        firstSymbolId
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
+                setTimeout(() => {
+                    setMapLoaded(true);
+                }, 500);
+            });
+        }
+
+        fetchData().catch(error => console.error('Error in fetchData:', error));
 
         return () => {
             window.removeEventListener('resize', handleResize);
@@ -354,229 +466,83 @@ const App: React.FC = () => {
         };
     }, [styleChanged, styleChangedOnce, zoomValue, coordinatesValue, ppmValue]);
 
+    /*const calculateScale = (zoom: number) => {
+        return 256 * 0.5 / Math.PI * Math.pow(2, zoom);
+    }
 
-    const zoomTest = 0.001678693092394923;
+    const calculateMetersPerPixel = (latitude: number, scale: number) => {
+        return Math.cos(latitude * Math.PI / 180) / scale;
+    }
+
+    const updateElementStyles = (isVisible: boolean) => {
+        if (titleElement instanceof HTMLElement && buttonElement instanceof HTMLElement) {
+            titleElement.style.color = isVisible ? '#eee' : "#0B0B19FF";
+            buttonElement.style.visibility = isVisible ? "visible" : "hidden";
+            buttonElement.style.opacity = isVisible ? "1" : "0";
+        }
+    }
 
     map.current?.on('move', () => {
         const latitude = map.current?.getCenter().lat;
         const zoom = map.current?.getZoom();
+
         if (latitude && zoom) {
-            const scale = 256 * 0.5 / Math.PI * Math.pow(2, zoom);
-            const metersPerPixel = Math.cos(latitude * Math.PI / 180) / scale;
+            const scale = calculateScale(zoom);
+            const metersPerPixel = calculateMetersPerPixel(latitude, scale);
             if (metersPerPixel) {
-                if (metersPerPixel > zoomTest) {
-                    const element = textElementTitle1;
-                    const element2 = textElementTitle2;
-                    const element3 = textElement3;
-
-
-                    if (element instanceof HTMLElement && element2 instanceof HTMLElement && element3 instanceof HTMLElement) {
-                        element.style.color = '#eee';
-                        element2.style.color = "#eee";
-
-                        element3.style.visibility = "visible";
-                        element3.style.opacity = "1";
-                    }
-                } else {
-                    const element = textElementTitle1;
-                    const element2 = textElementTitle2;
-                    const element3 = textElement3;
-
-                    if (element instanceof HTMLElement && element2 instanceof HTMLElement && element3 instanceof HTMLElement) {
-                        element.style.color = "#0B0B19FF";
-                        element2.style.color = "#0B0B19FF";
-
-                        element3.style.visibility = "hidden";
-                        element3.style.opacity = "0";
-                    }
-                }
+                const isVisible = metersPerPixel > zoomMin;
+                updateElementStyles(isVisible);
             }
         }
-    });
-
-    useEffect(() => {
-        if (city) {
-            Radar.autocomplete({
-                query: city,
-                limit: 10
-            })
-                .then((result) => {
-                    const { addresses } = result;
-                    const newCenter = [addresses[0].longitude, addresses[0].latitude] as [longitude: number, latitude: number];
-                    setLat(newCenter[1]);
-                    setLng(newCenter[0]);
-                    console.log(newCenter);
-                })
-                .catch((err) => {
-
-                });
-
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-
-            timeoutRef.current = window.setTimeout(() => {
-                flyToLocation(8);
-            }, 4000);
-        }
-    }, [city]);
-
-    const flyToLocation = (zoomFly: number) => {
-        map.current?.flyTo({
-            center: [lng, lat],
-            essential: true,
-            zoom: zoomFly
-        });
-    };
-
-    useEffect(() => {
-        if (city === '') {
-            setLat(lat);
-            setLng(lng);
-            timeoutRef.current = window.setTimeout(() => {
-                flyToLocation(1.7);
-            }, 500);
-        } else if (lat && lng) {
-            timeoutRef.current = window.setTimeout(() => {
-                flyToLocation(8);
-            }, 4000);
-        }
-
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, [lat, lng]);
-
-    const handleTest = (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter') {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-
-            setTimeout(() => {
-                flyToLocation(8);
-            }, 2500);
-        }
-    };
-
-    const handleStyleChange = () => {
-        if (mapStyle === 'mapbox://styles/mapbox/streets-v11') {
-            setPrevMapStyle(mapStyle);
-            setMapStyle('mapbox://styles/mapbox/standard');
-        } else if (mapStyle === 'mapbox://styles/mapbox/standard') {
-            setPrevMapStyle(mapStyle);
-            setMapStyle('mapbox://styles/mapbox/light-v11');
-        } else {
-            const temp = mapStyle;
-            setMapStyle(prevMapStyle);
-            setPrevMapStyle(temp);
-        }
-    };
-
-    const [gasTypes, setGasTypes] = useState<string[]>([]);
-
-    useEffect(() => {
-        fetch('/api/gasTypes', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
-            },
-        })
-            .then(response => response.json())
-            .then(data => {
-                const gasTypes = data.map((item: {formulaGas: string}) => item.formulaGas);
-                setGasTypes(gasTypes);
-            })
-            .catch(error => console.error('Error fetching gas types:', error));
-    }, []);
-
-    const handleGasChange = (value: string) => {
-    if (gasTypes.includes(value)) {
-        if (value === "CO2 non bio") {
-            value = "CO2nb";
-        } else if (value === "CO2 bio") {
-            value = "CO2b";
-        }
-
-        setSelectedGas(value as GasType);
-
-        if (value === 'NH3') {
-            setGasColors(['rgba(235,255,235,0)', 'rgb(204,255,204)', 'rgb(153,255,153)', 'rgb(102,255,102)', 'rgb(51,255,51)', 'rgb(0,255,0)'])
-        } else if (value === 'CO2b') {
-            setGasColors(['rgba(255,235,235,0)', 'rgb(255,204,204)', 'rgb(255,153,153)', 'rgb(255,102,102)', 'rgb(255,51,51)', 'rgb(255,0,0)'])
-        } else if (value === 'PFC') {
-            setGasColors(['rgba(236,222,239,0)', 'rgb(208,209,230)', 'rgb(166,189,219)',  'rgb(103,169,207)', 'rgb(28,144,153)', 'rgb(1,105,114)'])
-        } else if (value === 'CO2nb') {
-            setGasColors(['rgba(235,235,255,0)', 'rgb(204,204,255)', 'rgb(153,153,255)', 'rgb(102,102,255)', 'rgb(51,51,255)', 'rgb(0,0,255)'])
-        } else if (value === 'CH4') {
-            setGasColors(['rgba(255,255,235,0)', 'rgb(255,255,204)', 'rgb(255,255,153)', 'rgb(255,255,102)', 'rgb(255,255,51)', 'rgb(255,255,0)'])
-        } else if (value === 'HFC') {
-            setGasColors(['rgba(255,235,255,0)', 'rgb(255,204,255)', 'rgb(255,153,255)', 'rgb(255,102,255)', 'rgb(255,51,255)', 'rgb(255,0,255)'])
-        } else if (value === 'N2O') {
-            setGasColors(['rgba(235,235,235,0)', 'rgb(204,204,204)', 'rgb(153,153,153)', 'rgb(102,102,102)', 'rgb(51,51,51)', 'rgb(0,0,0)'])
-        }
-
-    } else {
-        console.error(`Invalid gas type: ${value}`);
-    }
-};
-
-    useEffect(() => {
-        if (map.current) {
-            map.current.setStyle(mapStyle);
-        }
-    }, [mapStyle]);
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth <= 450) {
-                setTitle("ADH");
-            } else {
-                setTitle("AIR DATA HUB");
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        handleResize(); // Call the function initially to set the title based on the initial window size
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-    }, []);
-
-    const colorClassTitle1 = mapLoaded ? 'title1' : 'white-color';
-    const colorClassTitle2 = mapLoaded ? 'title2' : 'white-color';
+    });*/
 
     return (
         <Container>
-            <AllTitle id="all-title-div">
-                <Title className={`title1 ${colorClassTitle1}`} ref={titleRef}>{title}</Title><Search id="search">
-                <GasSelector ref={selectRef} onChange={e => handleGasChange(e.target.value)} className="gas-selector">
-                        <option value="" disabled selected>{t('Gases')}</option>
+            <Nav id="all-title-div">
+                <Title className={`title ${colorClassTitle}`} ref={titleRef}>
+                    {title}
+                </Title>
+
+                <Search id="search">
+                    <GasSelector
+                        ref={selectRef}
+                        onChange={e => handleGasChange(e.target.value)}
+                        className="gas-selector"
+                    >
+                        <option value="" disabled selected>
+                            {t('Gases')}
+                        </option>
+
                         {gasTypes.map(gasType => {
                             let displayValue = gasType;
+
                             if (gasType === "CO2 non bio") {
                                 displayValue = "CO2nb";
                             } else if (gasType === "CO2 bio") {
                                 displayValue = "CO2b";
                             }
-                            return <option key={gasType} value={displayValue}>{displayValue}</option>
+
+                            return (
+                                <option key={gasType} value={displayValue}>
+                                    {displayValue}
+                                </option>
+                            )
                         })}
                     </GasSelector>
                 </Search>
 
-
-                <a href="/login" className="button-div"><RightButton className="button">{t('Log in')}</RightButton></a>
-
-
-            </AllTitle>
-
-
-            <Map ref={mapContainer} className={mapLoaded ? 'map-visible' : 'map-hidden'}/>
+                <a href="/login" className="button-div">
+                    <LoginButton className="button">
+                        {t('Log in')}
+                    </LoginButton>
+                </a>
+            </Nav>
+            <Map
+                ref={mapContainer}
+                className={mapLoaded ? 'map-visible' : 'map-hidden'}
+            />
         </Container>
-    );
+);
 }
 
 const renderApp = () => {
@@ -595,48 +561,34 @@ const renderApp = () => {
 
 document.addEventListener('DOMContentLoaded', renderApp);
 
-const AllTitle = styled.div`
+// Layout Components
+const Container = styled.div`
+    position: relative;
+    background: rgba(11, 11, 25);
+    height: 100vh;
+`
+
+const Map = styled.div`
+    position: relative;
+    width: 100%;
+    height: 100%;
+`
+
+const Nav = styled.div`
     display: flex;
     justify-content: space-between;
-
+    align-items: center;
     width: 100%;
     position: absolute;
     z-index: 1;
     padding: 30px;
 `
 
-const GasSelector = styled.select`
-    display: block;
-    padding: 10px 15px 10px 15px;
-    width: 100px;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: 'Aileron-SemiBold', sans-serif;
-    color: #0b0b19;
-    background-color: white;
-    box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
-    -webkit-appearance: none;
-    -moz-appearance: none;
-
-    @media (max-width: 768px) {
-        margin-left: 10px;
-        pointer-events: all;
-    }
-
-    @media (max-width: 375px) {
-        pointer-events: all;
-        margin-left: 0;
-    }
-`
-
 const Search = styled.div`
     display: flex;
     justify-content: space-between;
 
-
     @media (max-width: 768px) {
-
         justify-content: center;
         position: fixed;
         pointer-events: none;
@@ -656,8 +608,33 @@ const Search = styled.div`
     }
 `
 
+// Input Components
+const GasSelector = styled.select`
+    display: block;
+    padding: 10px 15px 10px 15px;
+    width: 100px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'Aileron-SemiBold', sans-serif;
+    color: #0b0b19;
+    background-color: white;
+    box-shadow: 0 0 7px rgba(11, 11, 25, 0.15);
+    -webkit-appearance: none;
+    -moz-appearance: none;
 
-const RightButton = styled.button`
+    @media (max-width: 768px) {
+        margin-left: 10px;
+        pointer-events: all;
+    }
+
+    @media (max-width: 375px) {
+        pointer-events: all;
+        margin-left: 0;
+    }
+`
+
+const LoginButton = styled.button`
     padding: 12px 18px;
     background: white;
     color: #0b0b19;
@@ -666,7 +643,7 @@ const RightButton = styled.button`
     border-radius: 10px;
     font-size: 14px;
     cursor: pointer;
-    box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
+    box-shadow: 0 0 7px rgba(11, 11, 25, 0.15);
     text-decoration: none;
 
     transition: background 0.3s, color 0.3s;
@@ -675,39 +652,25 @@ const RightButton = styled.button`
         background: #c6c6c6;
         color: #0b0b19;
     }
-`;
+`
 
+// Typography Components
 const Title = styled.h1`
     font-size: 1.2rem;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     color: white;
     white-space: nowrap;
-    text-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
+    text-shadow: 0 0 7px rgba(11, 11, 25, 0.15);
 `
 
 const Translate = styled.h2`
     font-family: "ArchivoBlack-Regular", sans-serif;
 `
 
-const Container = styled.div`
-    position: relative;
-    background: rgba(11, 11, 25);
-    height: 100vh;
-`
-
-const Map = styled.div`
-    position: relative;
-    width: 100%;
-    height: 100%;
-`
-
+//TODO: Change Color
 //TODO: Clean Code
-//TODO: Remove if not needed
 //TODO: Comment Code
-//TODO: Add Types
 //TODO: Add Tests
-//TODO: Connect DB correctly
-//TODO: Avoid errors
 //TODO: Add Images Sources
 //FIX: The geocoder not display

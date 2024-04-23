@@ -9,18 +9,30 @@ i18n
         resources: {
             en: {
                 translation: {
-                    "FROM DATA-X": "FROM DATA-X",
                     "Log in": "Log in",
                     "Search a City...": "Search a City...",
                     "Gases": "Gases",
+                    "Password": "Password",
+                    "Forgot your password?": "Forgot your password?",
+                    "Don't have an account?": "Don't have an account?",
+                    "Sign up": "Sign up",
+                    "First Name": "First Name",
+                    "Last Name": "Last Name",
+                    "Already have an account ?": "Already have an account?",
                 }
             },
             fr: {
                 translation: {
-                    "FROM DATA-X": "PAR DATA-X",
                     "Log in": "Connexion",
                     "Search for a city...": "Rechercher une ville...",
                     "Gases": "Gaz",
+                    "Password": "Mot de passe",
+                    "Forgot your password?": "Mot de passe oublié?",
+                    "Don't have an account?": "Vous n'avez pas de compte?",
+                    "Sign up": "S'inscrire",
+                    "First Name": "Prénom",
+                    "Last Name": "Nom",
+                    "Already have an account?": "Vous avez déjà un compte?",
                 }
             }
         },

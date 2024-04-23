@@ -13,6 +13,7 @@ const App: React.FC = () => {
     const [email, setEmail] = useState('');
     const [isAdmin, setIsAdmin] = useState(('user'));
     const { t } = useTranslation();
+    const [title, setTitle] = useState("AIR DATA HUB");
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
@@ -53,12 +54,28 @@ const App: React.FC = () => {
         }
     }
 
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth <= 450) {
+                setTitle("ADH");
+            } else {
+                setTitle("AIR DATA HUB");
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Call the function initially to set the title based on the initial window size
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     return (
         <Container>
             <a href="/">
                 <AllTitle>
-                    <Title>AIR DATA HUB</Title>
+                    <Title>{title}</Title>
                 </AllTitle>
             </a>
 
@@ -66,13 +83,13 @@ const App: React.FC = () => {
                 <Name>
                     <Value>
                         <Label>
-                            First Name
+                            {t("First Name")}
                         </Label>
                         <InputName type="text" value={firstName} onChange={e => setFirstName(e.target.value)}/>
                     </Value>
                     <Value>
                         <Label>
-                            Last Name
+                            {t("Last Name")}
                         </Label>
                         <InputName type="text" value={lastName} onChange={e => setLastName(e.target.value)}/>
                     </Value>
@@ -85,16 +102,16 @@ const App: React.FC = () => {
                 </Value>
                 <Value>
                     <Label>
-                        Password
+                        {t("Password")}
                     </Label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)}/>
                 </Value>
-                <SignUp type="submit" value="Sign up"/>
+                <SignUp type="submit" value={t("Sign up")}/>
                 <Login>
                     <label>
-                        Already have an account ?
+                        {t("Already have an account?")}
                     </label>
-                    <Link href="/login">Log in</Link>
+                    <Link href="/login">{t("Log in")}</Link>
                 </Login>
 
             </Form>
@@ -139,6 +156,7 @@ const Name = styled.div`
 
 const Title = styled.h1`
     font-size: 1.2rem;
+    margin-top: 8px;
     font-family: "Montserrat", sans-serif;
     font-weight: 800;
     color: #0b0b19;
