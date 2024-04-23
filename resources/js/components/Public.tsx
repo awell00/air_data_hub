@@ -178,7 +178,6 @@ const App: React.FC = () => {
                         const thirdChild = geocoderDiv.children[0] as HTMLElement;
 
                         thirdChild.style.color = '#0b0b19';
-                        /*thirdChild.style.backgroundColor = '#eeeeee';*/
                         thirdChild.style.borderRadius = '10px';
 
                         thirdChild.style.fontFamily = 'Aileron-SemiBold';
@@ -187,7 +186,23 @@ const App: React.FC = () => {
                         thirdChild.style.justifyContent = 'center';
                         thirdChild.style.fontSize = '16px';
 
+
                         thirdChild.style.transition = 'background-color 1s ease';
+
+                        const svgElement = thirdChild.querySelector('svg');
+
+                        if (window.innerWidth > 768) {
+                            if (svgElement) {
+                                svgElement.style.marginTop = '2.5px';
+                                svgElement.style.marginLeft = '3px';
+                            }
+                        } else {
+                            if (svgElement) {
+                                svgElement.style.marginTop = 'Opx'; // Adjust this value as needed
+                            }
+                        }
+
+
 
                     }
                 }
@@ -602,13 +617,14 @@ const GasSelector = styled.select`
     background-color: white;
     box-shadow: 0px 0px 7px rgba(11, 11, 25, 0.15);
 
+
     @media (max-width: 768px) {
         margin-left: 10px;
     }
 
     @media (max-width: 375px) {
+        pointer-events: all;
         margin-left: 0;
-        margin-top: 20px;
     }
 `
 
@@ -616,16 +632,21 @@ const Search = styled.div`
     display: flex;
     justify-content: space-between;
 
+
     @media (max-width: 768px) {
+
         justify-content: center;
         position: fixed;
         padding: 30px;
-        bottom: 60px;
+        bottom: 20px;
         left: 0;
         width: 100%;
     }
 
     @media (max-width: 375px) {
+        height: 85%;
+        gap: 500px;
+        pointer-events: none;
         justify-content: center;
         flex-direction: column;
         align-items: center;
