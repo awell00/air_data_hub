@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -15,4 +16,71 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
     }
+
+    public function getReport(Request $request) {
+        if ($request->user()) {
+            $firstName = $request->user()->firstName;
+            $lastName = $request->user()->lastName;
+            $report = DB::select('
+                SELECT Reports.titleReport, Reports.dateReport
+                FROM Reports
+                    INNER JOIN Do ON Reports.idReport = Do.idReport
+                    INNER JOIN Personnel ON Do.idPersonnel = Personnel.idPersonnel
+                WHERE Personnel.lastName = :lastName AND Personnel.firstName = :firstName;
+            ', ['lastName' => $lastName, 'firstName' => $firstName]);
+            return response()->json($report);
+        } else {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+    }
+
+    public function getSensors(Request $request) {
+        if ($request->user()) {
+            $firstName = $request->user()->firstName;
+            $lastName = $request->user()->lastName;
+            $report = DB::select("
+                SELECT Sensors.latSensor, Sensors.longSensor, Gases.nameGas
+                FROM Sensors
+                    INNER JOIN Gases ON Sensors.idGas = Gases.idGas
+                    INNER JOIN Personnel ON Sensors.idPersonnel = Personnel.idPersonnel
+                WHERE Personnel.lastName = :lastName AND Personnel.firstName = :firstName;
+            ", ['lastName' => $lastName, 'firstName' => $firstName]);
+            return response()->json($report);
+        } else {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+    }
+
+    public function addSensor(Request $request) {
+        if ($request->user()) {
+            $firstName = $request->user()->firstName;
+            $lastName = $request->user()->lastName;
+            $latSensor = $request->input('latSensor');
+            $longSensor = $request->input('longSensor');
+            $idGas = $request->input('idGas');
+            $idSector = $request->input('idSector');
+
+            // Check if the user's idPost is 2
+            $personnel = DB::select("
+                SELECT idPost FROM Personnel WHERE firstName = :firstName AND lastName = :lastName
+            ", ['firstName' => $firstName, 'lastName' => $lastName]);
+
+            if ($personnel[0]->idPost != 2) {
+                return response()->json(['message' => 'Cannot insert. The idPost of the Personnel is not 2.'], 400);
+            }
+
+            DB::insert("
+                INSERT INTO Sensors(latSensor, longSensor, idGas, idSector, idPersonnel)
+                VALUES (:latSensor, :longSensor, :idGas, :idSector,
+                (SELECT idPersonnel FROM Personnel WHERE firstName = :firstName AND lastName = :lastName))
+            ", ['latSensor' => $latSensor, 'longSensor' => $longSensor, 'idGas' => $idGas, 'idSector' => $idSector, 'firstName' => $firstName, 'lastName' => $lastName]);
+
+            return response()->json(['message' => 'Sensor added successfully']);
+        } else {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+    }
+
 }
+
+

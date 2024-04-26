@@ -1,19 +1,30 @@
+// React related imports
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from "react-dom/client";
+import { useTranslation } from 'react-i18next';
+
+// Internationalization
+import { useLanguage } from '../utils/Auth';
+
+// Libraries for styling
+import styled from 'styled-components';
+
+// Libraries for data validation
 import { z } from 'zod';
+
+// Libraries for utility functions
 import { debounce } from 'lodash';
 
-import '../../css/app.css';
-
+// Libraries for mapping
 import Radar from 'radar-sdk-js';
 import mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 
-import { useTranslation } from 'react-i18next';
-import i18n from '../../../i18n';
-
-import styled from 'styled-components';
+// Libraries for routing
 import { BrowserRouter as Router } from 'react-router-dom';
+
+// Relative imports
+import '../../css/app.css';
 
 // Types and interfaces
 type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
@@ -84,6 +95,7 @@ const App: React.FC = () => {
     const [selectedGas, setSelectedGas] = useState<GasType | ''>('');
     const [gasColors, setGasColors] = useState<string[]>();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
+    const [redirection, setRedirection] = useState("/login")
 
     // Title related states
     const [title, setTitle] = useState("AIR DATA HUB");
@@ -93,20 +105,8 @@ const App: React.FC = () => {
     const titleElement = document.getElementsByClassName('title');
     const buttonElement = document.getElementsByClassName('button');
 
-    // This useEffect hook is used to set the language of the application based on the user's browser language.
-    // It runs once when the component is mounted.
-    useEffect(() => {
-        try {
-            // Get the language from the browser
-            const browserLang = navigator.language.split('-')[0];
-            // Change the language of the application to match the browser's language
-            i18n.changeLanguage(browserLang)
-                .then(() => console.log(`Language set to ${browserLang}`))
-                .catch((error) => console.error(`Error setting language to ${browserLang}:`, error));
-        } catch (error) {
-            console.error('Error getting browser language:', error);
-        }
-    }, []);
+    // Import Functions
+    useLanguage();
 
     // This useEffect hook is used to handle window resize events.
     // It updates the title of the application based on the window width.
@@ -214,6 +214,18 @@ const App: React.FC = () => {
             console.error(`Invalid gas type: ${value}`);
         }
     };
+
+
+
+    useEffect(() => {
+        const access_token = localStorage.getItem('access_token');
+
+        if(access_token == null) {
+            setRedirection("/login")
+        } else {
+            setRedirection("/info")
+        }
+    }, []);
 
     useEffect(() => {
         const handleResize = debounce(() => {
@@ -531,7 +543,7 @@ const App: React.FC = () => {
                     </GasSelector>
                 </Search>
 
-                <a href="/login" className="button-div">
+                <a href={redirection} className="button-div">
                     <LoginButton className="button">
                         {t('Log in')}
                     </LoginButton>
@@ -612,7 +624,7 @@ const Search = styled.div`
 const GasSelector = styled.select`
     display: block;
     padding: 10px 15px 10px 15px;
-    width: 100px;
+    width: 78px;
     border: none;
     border-radius: 10px;
     font-size: 14px;
@@ -635,7 +647,7 @@ const GasSelector = styled.select`
 `
 
 const LoginButton = styled.button`
-    padding: 12px 18px;
+    padding: 10px 18px;
     background: white;
     color: #0b0b19;
     border: none;
@@ -647,6 +659,7 @@ const LoginButton = styled.button`
     text-decoration: none;
 
     transition: background 0.3s, color 0.3s;
+
 
     &:hover {
         background: #c6c6c6;

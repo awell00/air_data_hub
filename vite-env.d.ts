@@ -3,6 +3,7 @@ interface ImportMetaEnv {
   VITE_APP_URL: string;
   VITE_RADAR: string;
   VITE_MAPBOX: string;
+  VITE_ADMIN_EMAIL: string;
 }
 
 interface ImportMeta {

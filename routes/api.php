@@ -25,6 +25,9 @@ Route::group(['middleware' => ['auth:api', 'App\Http\Middleware\IsAdmin:admin']]
 
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/info', [UserController::class, 'getInfo']);
+    Route::get('/report', [UserController::class, 'getReport']);
+    Route::get('/sensors', [UserController::class, 'getSensors']);
+    Route::post('/add-sensor', [UserController::class, 'addSensor']);
 });
 
 Route::get('/user', function (Request $request) {

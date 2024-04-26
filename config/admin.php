@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'email' => env('ADMIN_EMAIL'),
+    'email' => env('VITE_ADMIN_EMAIL'),
 ];
