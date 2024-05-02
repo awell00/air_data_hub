@@ -108,6 +108,16 @@ const App: React.FC = () => {
     // Import Functions
     useLanguage();
 
+    useEffect(() => {
+        // Add the no-scroll class when the component mounts
+        document.body.classList.add('no-scroll');
+
+        // Remove the no-scroll class when the component unmounts
+        return () => {
+            document.body.classList.remove('no-scroll');
+        };
+    }, []);
+
     // This useEffect hook is used to handle window resize events.
     // It updates the title of the application based on the window width.
     // It runs once when the component is mounted and cleans up the event listener when the component is unmounted.

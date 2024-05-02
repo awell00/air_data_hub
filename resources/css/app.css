@@ -136,6 +136,11 @@
     }
 }
 
+.no-scroll {
+    overflow: hidden;
+    height: 100%;
+}
+
 .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib {
     display: none !important;
 }

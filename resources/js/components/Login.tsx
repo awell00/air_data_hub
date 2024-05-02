@@ -49,6 +49,16 @@ const App: React.FC = () => {
     // Import Functions
     useLanguage();
 
+    useEffect(() => {
+        // Add the no-scroll class when the component mounts
+        document.body.classList.add('no-scroll');
+
+        // Remove the no-scroll class when the component unmounts
+        return () => {
+            document.body.classList.remove('no-scroll');
+        };
+    }, []);
+
     // This useEffect hook is used to check if both the email and password fields are filled out.
     useEffect(() => {
         if (email && password) {
