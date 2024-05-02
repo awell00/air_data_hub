@@ -641,6 +641,7 @@ const Nav = styled.div`
 const Search = styled.div`
     display: flex;
     justify-content: space-between;
+    gap: 10px;
 
     @media (max-width: 768px) {
         justify-content: center;
