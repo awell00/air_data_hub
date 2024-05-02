@@ -21,6 +21,11 @@ type FormInputProps = {
     setValue: (value: string) => void;
 };
 
+type InputProps = {
+    isEmailValid?: boolean;
+    isPasswordValid?: boolean;
+};
+
 const LoginRequestBodySchema = z.object({
     email: z.string().email(),
     password: z.string(),
@@ -32,6 +37,8 @@ const App: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isFormComplete, setFormComplete] = useState(false);
+    const [isEmailValid, setEmailValid] = useState<boolean>(true);
+    const [isPasswordValid, setPasswordValid] = useState<boolean>(true);
 
     // Translation related state variables
     const { t } = useTranslation();
@@ -82,6 +89,9 @@ const App: React.FC = () => {
 
             const parsedBody = LoginRequestBodySchema.parse(requestBody);
 
+            setEmailValid(true);
+            setPasswordValid(true);
+
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: {
@@ -90,34 +100,37 @@ const App: React.FC = () => {
                 body: JSON.stringify(parsedBody),
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
             const data = await response.json();
 
-            // If the request is successful, redirect the user to the login page
-            if (response.ok) {
+            if (!response.ok) {
+                let errorMessage = `HTTP error! status: ${response.status}, message: ${data.message}`;
+
+                // Check if the error is related to the email or password
+                if (data.errors && data.errors.email) {
+                    errorMessage += ', email: ' + data.errors.email[0];
+                    setEmailValid(false);
+                }
+                if (data.errors && data.errors.password) {
+                    errorMessage += ', password: ' + data.errors.password[0];
+                    setPasswordValid(false);
+                }
+
+                throw new Error(errorMessage);
+            } else {
+                setEmailValid(true);
+                setPasswordValid(true);
                 localStorage.setItem('access_token', data.access_token);
                 window.location.href = data.redirect_url;
-            } else {
-                console.error('Error:', response.statusText);
             }
 
         } catch (error) {
-            // Log any error that occurs during the fetch operation
-            console.error('An error occurred while logging in:', error);
+            const err = error as Error;
+
+            console.error('An error occurred while logging in:', err);
         }
     };
 
     // Form Input Component
-    const FormInput: React.FC<FormInputProps> = ({ label, type, value, setValue }) => (
-        <Value>
-            <Label>{label}</Label>
-            <Input type={type} value={value} onChange={({ target: { value } }) => setValue(value)} />
-        </Value>
-    );
-
     return (
         <Container>
             <a href="/">
@@ -131,13 +144,13 @@ const App: React.FC = () => {
                     <Label>
                         Email
                     </Label>
-                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)}/>
+                    <Input type="email" value={email} onChange={e => {setEmail(e.target.value); setEmailValid(true);}} isEmailValid={isEmailValid}/>
                 </Value>
                 <Value>
                     <Label>
                         {t("Password")}
                     </Label>
-                    <Input type="password" value={password} onChange={e => setPassword(e.target.value)}/>
+                    <Input type="password" value={password} onChange={e => {setPassword(e.target.value); setPasswordValid(true);}} isPasswordValid={isPasswordValid}/>
                 </Value>
                 <LoginButton isFormComplete={isFormComplete}>
                     <input type="submit" value={t("Log in")} />
@@ -172,6 +185,7 @@ document.addEventListener('DOMContentLoaded', renderApp);
 const Container = styled.div`
     position: relative;
     height: 100vh;
+    overflow: hidden;
 `;
 
 const Form = styled.form`
@@ -185,25 +199,27 @@ const Form = styled.form`
 const Nav = styled.div`
     display: flex;
     justify-content: space-between;
+    align-items: center;
     width: 100%;
-    position: absolute;
-    z-index: 1;
-    padding: 30px;
-`;
+    padding: 20px 30px;
+    position: fixed;
+    top: 0;
+    background-color: #fffffe;
+`
 
 // Text Components
 const Title = styled.h1`
-    font-family: "Montserrat", sans-serif;
-    font-weight: 800;
-    color: #0b0b19;
-    font-size: 1.2rem;
+    font-family: "FoundersGrotesk-Bold", sans-serif;
+    color: #0f0e17;
+    font-size: 1.4rem;
     margin-top: 8px;
     white-space: nowrap;
 `;
 
 const Label = styled.label`
-    font-family: 'Aileron-SemiBold', sans-serif;
-    font-size: 0.9rem;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    font-size: 1rem;
+    color: #0f0e17;
 `;
 
 // Input Components
@@ -213,17 +229,22 @@ const Value = styled.div`
     margin-bottom: 1rem;
 `;
 
-const Input = styled.input`
+const Input = styled.input<InputProps>`
     margin-top: 0.5rem;
     padding: 1rem;
-    border: 1px solid #8e8e8e;
+    border: ${props => props.isEmailValid === false || props.isPasswordValid === false ? '1.5px solid #f25f4c' : '1.5px solid #dcdcdc'};
     border-radius: 7px;
     width: 25rem;
-    font-size: 0.9rem;
-    font-family: 'Aileron-Regular', sans-serif;
+    font-size: 1rem;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
 
     @media (max-width: 450px) {
         width: 89vw;
+    }
+
+    &:focus {
+        outline: none;
+        font-size: 1rem;
     }
 `;
 
@@ -232,20 +253,19 @@ const LoginButton = styled.div<{ isFormComplete: boolean }>`
     input {
         margin: 1rem;
         padding: 1rem;
-        border: none;
         border-radius: 7px;
         width: 25rem;
-        background-color: ${props => props.isFormComplete ? 'rgb(11, 11, 25)' : 'rgb(218, 218, 218)'};
-        color: ${props => props.isFormComplete ? '#eeeeee' : '#0b0b19'};
-        font-family: 'Aileron-Regular', sans-serif;
+        border: #dcdcdc 1.5px solid;
+        background-color: ${props => props.isFormComplete ? '#dcdcdc' : '#f9f9f9'};
+        color: #0f0e17;
+        font-family: 'FoundersGrotesk-Medium', sans-serif;
         transition: background-color 0.3s, color 0.3s;
-        font-size: 1rem;
+        font-size: 1.1rem;
 
         &:hover {
             cursor: pointer;
             outline: none;
-            background-color: rgb(11, 11, 25);
-            color: #eeeeee;
+            background-color: #dcdcdc;
         }
 
         @media (max-width: 450px) {
@@ -256,17 +276,18 @@ const LoginButton = styled.div<{ isFormComplete: boolean }>`
 
 // Link Components
 const Signup = styled.div`
-    font-family: 'Aileron-Regular', sans-serif;
-    font-size: 0.8rem;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+    color: #0f0e17;
+    font-size: 0.9rem;
     margin-top: 1rem;
 `;
 
 const Link = styled.a`
-    color: rgb(11, 11, 25);
+    color: #0f0e17;
     margin-left: 0.5rem;
-    font-family: 'Aileron-Regular', sans-serif;
-    font-size: 0.8rem;
-    transition: color 0.2s;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+    font-size: 0.9rem;
+    transition: font-weight 0.2s;
 
     &:hover {
         font-weight: bold;

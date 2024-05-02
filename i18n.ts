@@ -17,8 +17,11 @@ i18n
                     "Don't have an account?": "Don't have an account?",
                     "Sign up": "Sign up",
                     "First Name": "First Name",
+                    "Log out": "Log out",
+                    "Welcome": "Welcome",
                     "Last Name": "Last Name",
                     "Already have an account ?": "Already have an account?",
+                    "Add": "Add",
                 }
             },
             fr: {
@@ -30,9 +33,12 @@ i18n
                     "Forgot your password?": "Mot de passe oublié?",
                     "Don't have an account?": "Vous n'avez pas de compte?",
                     "Sign up": "S'inscrire",
-                    "First Name": "Prénom",
+                    "Log out": "Deconnexion",
+                    "First Name": "Prenom",
                     "Last Name": "Nom",
+                    "Welcome": "Bienvenue",
                     "Already have an account?": "Vous avez déjà un compte?",
+                    "Add": "Ajouter",
                 }
             }
         },

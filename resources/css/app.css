@@ -7,16 +7,98 @@
     font-style: normal;
 }
 
-/*body {
-    overflow: hidden;
-}*/
-
 @font-face {
     font-family: 'Aileron-SemiBold';
     src: url('../../fonts/Aileron-SemiBold.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
 }
+
+@font-face {
+    font-family: 'FoundersGrotesk-Bold';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-Bold.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-BoldItalic';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-BoldItalic.otf') format('opentype');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-Light';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-Light.otf') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-LightItalic';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-LightItalic.otf') format('opentype');
+    font-weight: 300;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-Medium';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-MediumItalic';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-MediumItalic.otf') format('opentype');
+    font-weight: 500;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-Regular';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-RegularItalic';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-RegularItalic.otf') format('opentype');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-Semibold';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-Semibold.otf') format('opentype');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'FoundersGrotesk-SemiboldItalic';
+    src: url('../../fonts/FoundersGrotesk/FoundersGrotesk-SemiboldItalic.otf') format('opentype');
+    font-weight: 600;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'FoundersGroteskXCond-Bold';
+    src: url('../../fonts/FoundersGrotesk/FoundersGroteskXCond-Bold.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'FoundersGroteskXCond-Lt';
+    src: url('../../fonts/FoundersGrotesk/FoundersGroteskXCond-Lt.otf') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+}
+
+/* Add the rest of your fonts here, following the same pattern. */
 
 .title1, .title2 {
     transition: color 1s ease;
@@ -66,4 +148,8 @@
 
 input {
     margin-top: 20px;
+}
+
+body {
+    background-color: #fffffe;
 }

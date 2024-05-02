@@ -57,7 +57,7 @@ class UserController extends Controller
             $lastName = $request->user()->lastName;
             $latSensor = $request->input('latSensor');
             $longSensor = $request->input('longSensor');
-            $idGas = $request->input('idGas');
+            $formulaGas = $request->input('formulaGas');
             $idSector = $request->input('idSector');
 
             // Check if the user's idPost is 2
@@ -69,13 +69,35 @@ class UserController extends Controller
                 return response()->json(['message' => 'Cannot insert. The idPost of the Personnel is not 2.'], 400);
             }
 
+            if ($formulaGas === "CO2nb") {
+                $formulaGas = "CO2 non bio";
+            } else if ($formulaGas === "") {
+                $formulaGas = "CO2 bio";
+            }
+
+            $idGas = DB::select("
+                SELECT idGas FROM Gases WHERE formulaGas = :formulaGas
+            ", ['formulaGas' => $formulaGas]);
+
+            $idGas = $idGas[0]->idGas;
+
             DB::insert("
                 INSERT INTO Sensors(latSensor, longSensor, idGas, idSector, idPersonnel)
                 VALUES (:latSensor, :longSensor, :idGas, :idSector,
                 (SELECT idPersonnel FROM Personnel WHERE firstName = :firstName AND lastName = :lastName))
             ", ['latSensor' => $latSensor, 'longSensor' => $longSensor, 'idGas' => $idGas, 'idSector' => $idSector, 'firstName' => $firstName, 'lastName' => $lastName]);
 
-            return response()->json(['message' => 'Sensor added successfully']);
+            $newSensor = DB::select("
+                SELECT Sensors.latSensor, Sensors.longSensor, Gases.nameGas
+                FROM Sensors
+                    INNER JOIN Gases ON Sensors.idGas = Gases.idGas
+                    INNER JOIN Personnel ON Sensors.idPersonnel = Personnel.idPersonnel
+                WHERE Personnel.lastName = :lastName AND Personnel.firstName = :firstName
+                ORDER BY Sensors.idSensor DESC
+                LIMIT 1
+            ", ['lastName' => $lastName, 'firstName' => $firstName]);
+
+            return response()->json(['message' => 'Sensor added successfully', 'newSensor' => $newSensor[0]]);
         } else {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }

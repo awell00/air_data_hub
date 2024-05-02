@@ -17,19 +17,30 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        $credentials = request(['email', 'password']);
-        if (!auth()->attempt($credentials)) {
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => [
-                    'password' => [
-                        'Invalid credentials'
+                    'email' => [
+                        'Email does not exist'
                     ],
                 ]
             ], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'password' => [
+                        'Invalid password'
+                    ],
+                ]
+            ], 422);
+        }
+
         $authToken = $user->createToken('auth-token')->accessToken;
 
         return response()->json([
@@ -51,7 +62,12 @@ class AuthController extends Controller
 
             $personnel = DB::select('select * from Personnel where firstName = ? AND lastName= ?', [$request->firstName, $request->lastName]);
             if (!$personnel && $request->email != config('admin.email')) {
-                return response()->json(['message' => 'Personnel not found'], 404);
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'personnel' => 'Personnel not found'
+                    ],
+                ], 404);
             }
 
             if ($request->role == 'admin') {

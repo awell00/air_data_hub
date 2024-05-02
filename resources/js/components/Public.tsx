@@ -324,16 +324,47 @@ const App: React.FC = () => {
                 geocoderAddedRef.current = true;
 
                 if (geocoderDiv.firstChild) {
+
+                    const style = document.createElement('style');
+                    style.innerHTML = `
+                      .mapboxgl-ctrl-geocoder--input::placeholder {
+                        font-family: 'FoundersGrotesk-Medium';
+                        color: #a7a9be;
+                      }
+                      .mapboxgl-ctrl-geocoder--input {
+                        font-family: 'FoundersGrotesk-Medium';
+
+                      }
+                    `;
+                    document.head.appendChild(style);
+
                     const thirdChild = geocoderDiv.children[0] as HTMLElement;
 
-                    thirdChild.style.color = '#0b0b19';
-                    thirdChild.style.borderRadius = '10px';
+                    thirdChild.style.color = '#0f0e17';
+                    thirdChild.style.borderRadius = '20px 10px 10px 20px';
+                    thirdChild.style.fontFamily = 'FoundersGrotesk-Bold';
 
                     thirdChild.style.fontFamily = 'Aileron-SemiBold';
                     thirdChild.style.display = 'flex';
                     thirdChild.style.alignItems = 'center';
                     thirdChild.style.justifyContent = 'center';
-                    thirdChild.style.fontSize = '16px';
+                    thirdChild.style.fontSize = '1rem';
+                    thirdChild.style.backgroundColor = '#fffffe';
+
+                    const svgElement = thirdChild.querySelector('svg');
+                    if (svgElement) {
+                        svgElement.style.margin = '1px 0 0 4px';
+                        svgElement.style.fill = '#a7a9be';
+                    }
+
+                    window.addEventListener('resize', function() {
+                        const mediaQuery = window.matchMedia('(max-width: 450px)');
+                        if (mediaQuery.matches) {
+                            thirdChild.style.borderRadius = '20px';
+                        } else {
+                            thirdChild.style.borderRadius = '20px 10px 10px 20px';
+                        }
+                    });
 
                     thirdChild.style.transition = 'background-color 1s ease';
                 }
@@ -576,8 +607,9 @@ document.addEventListener('DOMContentLoaded', renderApp);
 // Layout Components
 const Container = styled.div`
     position: relative;
-    background: rgba(11, 11, 25);
+    background: #0f0e17;
     height: 100vh;
+    overflow: hidden;
 `
 
 const Map = styled.div`
@@ -593,7 +625,7 @@ const Nav = styled.div`
     width: 100%;
     position: absolute;
     z-index: 1;
-    padding: 30px;
+    padding: 20px 30px;
 `
 
 const Search = styled.div`
@@ -623,14 +655,14 @@ const Search = styled.div`
 // Input Components
 const GasSelector = styled.select`
     display: block;
-    padding: 10px 15px 10px 15px;
-    width: 78px;
+    padding: 10px 20px;
+    width: 87px;
     border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: 'Aileron-SemiBold', sans-serif;
-    color: #0b0b19;
-    background-color: white;
+    font-size: 1rem;
+    border-radius: 10px 20px 20px 10px;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    color: #0f0e17;
+    background-color: #fffffe;
     box-shadow: 0 0 7px rgba(11, 11, 25, 0.15);
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -640,39 +672,40 @@ const GasSelector = styled.select`
         pointer-events: all;
     }
 
-    @media (max-width: 375px) {
+    @media (max-width: 450px) {
         pointer-events: all;
+        border-radius: 20px;
         margin-left: 0;
     }
 `
 
 const LoginButton = styled.button`
-    padding: 10px 18px;
-    background: white;
-    color: #0b0b19;
+    padding: 10px 20px;
+    background-color: #fffffe;
+    color: #0f0e17;
+    vertical-align: baseline;
     border: none;
-    font-family: 'Aileron-SemiBold', sans-serif;
-    border-radius: 10px;
-    font-size: 14px;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    border-radius: 20px;
+    font-size: 1rem;
     cursor: pointer;
     box-shadow: 0 0 7px rgba(11, 11, 25, 0.15);
     text-decoration: none;
 
     transition: background 0.3s, color 0.3s;
 
-
     &:hover {
-        background: #c6c6c6;
-        color: #0b0b19;
+        cursor: pointer;
+        background: #dcdcdc;
+        color: #0f0e17;
     }
 `
 
 // Typography Components
 const Title = styled.h1`
-    font-size: 1.2rem;
-    font-family: "Montserrat", sans-serif;
-    font-weight: 800;
-    color: white;
+    font-size: 1.4rem;
+    font-family: "FoundersGrotesk-Bold", sans-serif;
+    color: #fffffe;
     white-space: nowrap;
     text-shadow: 0 0 7px rgba(11, 11, 25, 0.15);
 `

@@ -21,6 +21,11 @@ type FormInputProps = {
     setValue: (value: string) => void;
 };
 
+type InputProps = {
+    isFirstNameValid?: boolean;
+    isLastNameValid?: boolean;
+};
+
 const SignupRequestBodySchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
@@ -38,6 +43,8 @@ const App: React.FC = () => {
     const [password, setPassword] = useState('');
     const [isAdmin, setIsAdmin] = useState('user');
     const [isFormComplete, setFormComplete] = useState(false);
+    const [isFirstNameValid, setFirstNameValid] = useState(true);
+    const [isLastNameValid, setLastNameValid] = useState(true);
 
     // Translation related state variables
     const { t } = useTranslation();
@@ -98,14 +105,21 @@ const App: React.FC = () => {
                 body: JSON.stringify(parsedBody),
             });
 
+            const data = await response.json();
+
             // If the request is successful, redirect the user to the login page
             if (response.ok) {
+                setFirstNameValid(true);
+                setLastNameValid(true);
                 window.location.href = '/login';
             } else {
-                console.error('Error:', response.statusText);
+                if(data.errors.personnel) {
+                    setFirstNameValid(false);
+                    setLastNameValid(false);
+                }
             }
         } catch (error) {
-            // Log any error that occurs during the fetch operation
+            const err = error as Error;
             console.error('Error:', error);
         }
     }
@@ -132,13 +146,13 @@ const App: React.FC = () => {
                         <Label>
                             {t("First Name")}
                         </Label>
-                        <InputName type="text" value={firstName} onChange={e => setFirstName(e.target.value)}/>
+                        <InputName type="text" value={firstName} onChange={e => { setFirstName(e.target.value); setFirstNameValid(true);}} isFirstNameValid={isFirstNameValid} />
                     </Value>
                     <Value>
                         <Label>
                             {t("Last Name")}
                         </Label>
-                        <InputName type="text" value={lastName} onChange={e => setLastName(e.target.value)}/>
+                        <InputName type="text" value={lastName} onChange={e => { setLastName(e.target.value); setLastNameValid(true); }} isLastNameValid={isLastNameValid} />
                     </Value>
                 </Name>
                 <Value>
@@ -200,11 +214,13 @@ const Form = styled.form`
 const Nav = styled.div`
     display: flex;
     justify-content: space-between;
+    align-items: center;
     width: 100%;
-    position: absolute;
-    z-index: 1;
-    padding: 30px;
-`;
+    padding: 20px 30px;
+    position: fixed;
+    top: 0;
+    background-color: #fff;
+`
 
 const Name = styled.div`
     display: flex;
@@ -220,17 +236,17 @@ const Name = styled.div`
 
 // Text Components
 const Title = styled.h1`
-    font-family: "Montserrat", sans-serif;
-    font-weight: 800;
-    color: #0b0b19;
-    font-size: 1.2rem;
+    font-family: "FoundersGrotesk-Bold", sans-serif;
+    color: #0f0e17;
+    font-size: 1.4rem;
     margin-top: 8px;
     white-space: nowrap;
 `;
 
 const Label = styled.label`
-    font-family: 'Aileron-SemiBold', sans-serif;
-    font-size: 0.9rem;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    color: #0f0e17;
+    font-size: 1rem;
 `;
 
 // Input Components
@@ -240,19 +256,25 @@ const Value = styled.div`
     margin-bottom: 1rem;
 `;
 
-const Input = styled.input`
+const Input = styled.input<InputProps>`
     margin-top: 0.5rem;
     padding: 1rem;
-    border: 1px solid #8e8e8e;
+    border: ${props => props.isFirstNameValid === false || props.isLastNameValid === false ? '1.5px solid #f25f4c' : '1.5px solid #dcdcdc'};
     border-radius: 7px;
     width: 25rem;
-    font-size: 0.9rem;
-    font-family: 'Aileron-Regular', sans-serif;
+    font-size: 1rem;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
 
     @media (max-width: 450px) {
         width: 89vw;
     }
+
+    &:focus {
+        outline: none;
+        font-size: 1rem;
+    }
 `;
+
 
 const InputName = styled(Input)`
     width: 12rem;
@@ -267,20 +289,19 @@ const SignUpButtton = styled.div<{ isFormComplete: boolean }>`
     input {
         margin: 1rem;
         padding: 1rem;
-        border: none;
         border-radius: 7px;
         width: 25rem;
-        background-color: ${props => props.isFormComplete ? 'rgb(11, 11, 25)' : 'rgb(218, 218, 218)'};
-        color: ${props => props.isFormComplete ? '#eeeeee' : '#0b0b19'};
-        font-family: 'Aileron-Regular', sans-serif;
+        border: #dcdcdc 1.5px solid;
+        background-color: ${props => props.isFormComplete ? '#dcdcdc' : '#f9f9f9'};
+        color: #0f0e17;
+        font-family: 'FoundersGrotesk-Medium', sans-serif;
         transition: background-color 0.3s, color 0.3s;
-        font-size: 1rem;
+        font-size: 1.1rem;
 
         &:hover {
             cursor: pointer;
             outline: none;
-            background-color: rgb(11, 11, 25);
-            color: #eeeeee;
+            background-color: #dcdcdc;
         }
 
         @media (max-width: 450px) {
@@ -291,16 +312,17 @@ const SignUpButtton = styled.div<{ isFormComplete: boolean }>`
 
 // Link Components
 const Login = styled.div`
-    font-family: 'Aileron-Regular', sans-serif;
-    font-size: 0.8rem;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+    color: #0f0e17;
+    font-size: 0.9rem;
     margin-top: 1rem;
 `;
 
 const Link = styled.a`
-    color: rgb(11, 11, 25);
+    color: #0f0e17;
     margin-left: 0.5rem;
-    font-family: 'Aileron-Regular', sans-serif;
-    font-size: 0.8rem;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+    font-size: 0.9rem;
     transition: color 0.2s;
 
     &:hover {
