@@ -367,14 +367,20 @@ const App: React.FC = () => {
                         svgElement.style.fill = '#a7a9be';
                     }
 
-                    window.addEventListener('resize', function() {
+                    const adjustBorderRadius = () => {
                         const mediaQuery = window.matchMedia('(max-width: 450px)');
                         if (mediaQuery.matches) {
                             thirdChild.style.borderRadius = '20px';
                         } else {
                             thirdChild.style.borderRadius = '20px 10px 10px 20px';
                         }
-                    });
+                    };
+
+                    // Adjust the border radius immediately
+                    adjustBorderRadius();
+
+                    // Adjust the border radius when the window is resized
+                    window.addEventListener('resize', adjustBorderRadius);
 
                     thirdChild.style.transition = 'background-color 1s ease';
                 }

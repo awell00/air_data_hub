@@ -305,6 +305,7 @@ const SignUpButtton = styled.div<{ isFormComplete: boolean }>`
         background-color: ${props => props.isFormComplete ? '#dcdcdc' : '#f9f9f9'};
         color: #0f0e17;
         font-family: 'FoundersGrotesk-Medium', sans-serif;
+        font-weight: 500;
         transition: background-color 0.3s, color 0.3s;
         font-size: 1.1rem;
 
