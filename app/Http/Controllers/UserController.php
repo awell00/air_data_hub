@@ -51,6 +51,31 @@ class UserController extends Controller
         }
     }
 
+    public function getDataInSameAgency(Request $request) {
+        if ($request->user()) {
+            $firstName = $request->user()->firstName;
+            $lastName = $request->user()->lastName;
+            $report = DB::select("
+                SELECT Data.dateData, Data.ppmValue, Sensors.latSensor, Sensors.longSensor, Sensors.idSensor, Gases.formulaGas
+                FROM Data
+                    INNER JOIN Sensors on Data.idSensor = Sensors.idSensor
+                    INNER JOIN Personnel on Sensors.idPersonnel = Personnel.idPersonnel
+                    INNER JOIN Agences on Personnel.idAgence = Agences.idAgence
+                    LEFT JOIN Contain on Data.idData = Contain.idData
+                    LEFT JOIN Reports on Contain.idReport = Reports.idReport
+                    INNER JOIN Gases on Sensors.idGas = Gases.idGas
+                WHERE Agences.idAgence = (
+                    SELECT idAgence
+                    FROM Personnel
+                    WHERE firstName = :firstName AND lastName = :lastName
+                ) AND Reports.idReport IS NULL;
+            ", ['firstName' => $firstName, 'lastName' => $lastName]);
+            return response()->json($report);
+        } else {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+    }
+
     public function addSensor(Request $request) {
         if ($request->user()) {
             $firstName = $request->user()->firstName;

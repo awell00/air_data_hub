@@ -28,6 +28,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/report', [UserController::class, 'getReport']);
     Route::get('/sensors', [UserController::class, 'getSensors']);
     Route::post('/add-sensor', [UserController::class, 'addSensor']);
+    Route::get('/data-in-agency', [UserController::class, 'getDataInSameAgency']);
 });
 
 Route::get('/user', function (Request $request) {

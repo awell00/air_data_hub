@@ -46,12 +46,16 @@ const App: React.FC = () => {
     const [sensors, setSensors] = useState<Sensor[]>([]);
     const { t } = useTranslation();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
+    const [dataAgency, setDataAgency] = useState([]);
     const [selectedGas, setSelectedGas] = useState("");
     const [address, setAddress] = useState("");
     const [formulaGas, setFormulaGas] = useState("");
     const [sector, setSector] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [isFormComplete, setFormComplete] = useState(false);
+    const [dataGas, setDataGas] = useState([]);
+    const [index, setIndex] = useState<number | null>(null);
+    const access_token = localStorage.getItem('access_token');
 
     const resetForm = () => {
         setAddress("");
@@ -201,7 +205,6 @@ const App: React.FC = () => {
     }
 
     const fetchSensors = async () => {
-        const access_token = localStorage.getItem('access_token');
         if (!access_token) {
             window.location.href = '/login';
             return;
@@ -281,6 +284,41 @@ const App: React.FC = () => {
         fetchGasTypes().catch(error => console.error('Error in fetchGasTypes:', error));
     }, []);
 
+    //Get the data in agency to add in the select option of the form with request get /api/data-in-agency
+    useEffect(() => {
+        const fetchDataInAgency = async () => {
+            try {
+                const response = await fetch('/api/data-in-agency', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${access_token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    console.error('Network response was not ok');
+                    return;
+                }
+
+                const data = await response.json();
+
+                const dateData = data.map((item: {dateData: string}) => item.dateData);
+                const gasData = data.map((item: {formulaGas: string}) => item.formulaGas);
+
+                setDataAgency(dateData);
+                setDataGas(gasData);
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    console.error('Validation error:', error.errors);
+                } else {
+                    console.error('Error fetching gas types:', error);
+                }
+            }
+        };
+
+        fetchDataInAgency().catch(error => console.error('Error in fetchGasTypes:', error));
+    }, []);
+
     return (
         <Container>
             <Nav>
@@ -324,6 +362,52 @@ const App: React.FC = () => {
 
                                     return (
                                         <option key={gasType} value={displayValue}>
+                                            {displayValue}
+                                        </option>
+                                    )
+                                })}
+                            </Select>
+                            <Select name="sector" value={sector} onChange={e => setSector(e.target.value)}>
+                                <option value="1">Sector 1</option>
+                                <option value="2">Sector 2</option>
+                                <option value="3">Sector 3</option>
+                            </Select>
+                        </Selects>
+                    </Elements>
+                    <Submit isFormComplete={isFormComplete}>
+                        <input type="submit" value={t("Add")}/>
+                    </Submit>
+                    {successMessage && <p>{successMessage}</p>}
+                </Form>
+
+                <Form onSubmit={handleSubmit}>
+                    <Elements>
+                        <Input
+                            type="text"
+                            name="titleReport"
+                            placeholder={index === null ? "Select a date of Data" : "Enter " + dataGas[index] + " Analysis Report Name"}
+                            value={address}
+                            onChange={e => setAddress(e.target.value)}
+                            disabled={index === null}
+                        />
+                        <Selects>
+                            <Select
+                                name="dateData"
+                                value={formulaGas}
+                                onChange={e => {
+                                    setFormulaGas(e.target.value)
+                                    const selectedIndex = e.target.options.selectedIndex;
+                                    setIndex(selectedIndex - 1);
+                                }}
+                            >
+                                <option value="" disabled>
+                                    {t('Date')}
+                                </option>
+
+                                {dataAgency.map(data => {
+                                    let displayValue = data;
+                                    return (
+                                        <option key={data} value={displayValue}>
                                             {displayValue}
                                         </option>
                                     )
@@ -518,6 +602,11 @@ const Input = styled.input`
     ::placeholder {
         color: #a7a9be;
     }
+
+    &:focus {
+        outline: none;
+        font-size: 1rem;
+    }
 `;
 
 const Select = styled.select `
@@ -528,6 +617,11 @@ const Select = styled.select `
     font-size: 1rem;
     color: #0f0e17;
     font-family: 'FoundersGrotesk-Medium', sans-serif;
+
+    &:focus {
+        outline: none;
+        font-size: 1rem;
+    }
 `
 
 const Component = styled.div`
