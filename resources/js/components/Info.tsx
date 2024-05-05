@@ -4,6 +4,18 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import {removeAccents} from '../utils/Auth';
+import '@mobiscroll/react/dist/css/mobiscroll.min.css';
+import { Select, setOptions, localeFr } from '@mobiscroll/react';
+import { createGlobalStyle } from 'styled-components';
+
+
+setOptions({
+    locale: localeFr,
+    theme: 'ios',
+    themeVariant: 'light'
+});
+
+
 
 // Libraries for mapping
 import Radar from 'radar-sdk-js';
@@ -47,7 +59,9 @@ const App: React.FC = () => {
     const { t } = useTranslation();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
     const [dataAgency, setDataAgency] = useState([]);
+    const [admins, setAdmins] = useState([]);
     const [selectedGas, setSelectedGas] = useState("");
+    const [selectedCoWriters, setSelectedCoWriters] = useState<string[]>([]);
     const [address, setAddress] = useState("");
     const [formulaGas, setFormulaGas] = useState("");
     const [sector, setSector] = useState("");
@@ -176,7 +190,8 @@ const App: React.FC = () => {
                 latSensor: lat,
                 longSensor: long,
                 formulaGas: formulaGas,
-                idSector: sector
+                idSector: sector,
+                coWriters: selectedCoWriters
             })
         });
 
@@ -286,6 +301,35 @@ const App: React.FC = () => {
 
     //Get the data in agency to add in the select option of the form with request get /api/data-in-agency
     useEffect(() => {
+        const fetchAdminsInAgency = async () => {
+            try {
+                const response = await fetch('/api/admins-in-agency', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${access_token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    console.error('Network response was not ok');
+                    return;
+                }
+
+                const data = await response.json();
+
+                const fullName = data.map((item: {firstName: string, lastName: string}) => [item.firstName, item.lastName]);
+                const name = fullName.map((item: string[]) => item.join(" "));
+
+                setAdmins(name);
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    console.error('Validation error:', error.errors);
+                } else {
+                    console.error('Error fetching gas types:', error);
+                }
+            }
+        };
+
         const fetchDataInAgency = async () => {
             try {
                 const response = await fetch('/api/data-in-agency', {
@@ -316,136 +360,147 @@ const App: React.FC = () => {
             }
         };
 
+        fetchAdminsInAgency().catch(error => console.error('Error in fetchGasTypes:', error));
         fetchDataInAgency().catch(error => console.error('Error in fetchGasTypes:', error));
     }, []);
 
     return (
-        <Container>
-            <Nav>
-                <Redirection href="/">
-                    <Title>AIR DATA HUB</Title>
-                </Redirection>
-                <LogoutButton onClick={handleLogout}>{t("Log out")}</LogoutButton>
-            </Nav>
+        <>
+            <GlobalStyles />
+            <Container>
+                <Nav>
+                    <Redirection href="/">
+                        <Title>AIR DATA HUB</Title>
+                    </Redirection>
+                    <LogoutButton onClick={handleLogout}>{t("Log out")}</LogoutButton>
+                </Nav>
 
 
-            <UserInfo>
-                {user ? (
-                    <p>{t("Welcome")}, {removeAccents(user.name)}!</p>
-                ) : (
-                    <p>Loading...</p>
-                )}
-            </UserInfo>
-            <div>
+                <UserInfo>
+                    {user ? (
+                        <p>{t("Welcome")}, {removeAccents(user.name)}!</p>
+                    ) : (
+                        <p>Loading...</p>
+                    )}
+                </UserInfo>
+                <div>
 
-                <Form onSubmit={handleSubmit}>
-                    <Elements>
-                        <Input type="text" name="address" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} />
-                        <Selects>
+                    <Form onSubmit={handleSubmit}>
+                        <Elements>
+                            <Input type="text" name="address" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} />
+                            <Selects>
+                                <Selector
+                                    name="formulaGas"
+                                    value={formulaGas}
+                                    onChange={e => setFormulaGas(e.target.value)}
+                                >
+                                    <option value="" disabled>
+                                        {t('Gases')}
+                                    </option>
+
+                                    {gasTypes.map(gasType => {
+                                        let displayValue = gasType;
+
+                                        if (gasType === "CO2 non bio") {
+                                            displayValue = "CO2nb";
+                                        } else if (gasType === "CO2 bio") {
+                                            displayValue = "CO2b";
+                                        }
+
+                                        return (
+                                            <option key={gasType} value={displayValue}>
+                                                {displayValue}
+                                            </option>
+                                        )
+                                    })}
+                                </Selector>
+                                <Selector name="sector" value={sector} onChange={e => setSector(e.target.value)}>
+                                    <option value="1">Sector 1</option>
+                                    <option value="2">Sector 2</option>
+                                    <option value="3">Sector 3</option>
+                                </Selector>
+                            </Selects>
+                        </Elements>
+                        <Submit isFormComplete={isFormComplete}>
+                            <input type="submit" value={t("Add")}/>
+                        </Submit>
+                        {successMessage && <p>{successMessage}</p>}
+                    </Form>
+
+                    <Form onSubmit={handleSubmit}>
+                        <Elements>
+                            <Input
+                                type="text"
+                                name="titleReport"
+                                placeholder={index === null ? "Select a date of Data" : "Enter " + dataGas[index] + " Analysis Report Name"}
+                                value={address}
+                                onChange={e => setAddress(e.target.value)}
+                                disabled={index === null}
+                            />
+                            <Selects>
+                                <Selector
+                                    name="dateData"
+                                    value={formulaGas}
+                                    onChange={e => {
+                                        setFormulaGas(e.target.value)
+                                        const selectedIndex = e.target.options.selectedIndex;
+                                        setIndex(selectedIndex - 1);
+                                    }}
+                                >
+                                    <option value="" disabled>
+                                        {t('Date')}
+                                    </option>
+
+                                    {dataAgency.map(data => {
+                                        let displayValue = data;
+                                        return (
+                                            <option key={data} value={displayValue}>
+                                                {displayValue}
+                                            </option>
+                                        )
+                                    })}
+                                </Selector>
+
+                            </Selects>
                             <Select
-                                name="formulaGas"
-                                value={formulaGas}
-                                onChange={e => setFormulaGas(e.target.value)}
-                            >
-                                <option value="" disabled>
-                                    {t('Gases')}
-                                </option>
+                                data={admins.map(admin => removeAccents(admin))}
+                                selectMultiple={true}
+                                touchUi={false}
+                                inputStyle={"outline selector" as any}
+                                labelStyle="stacked"
+                                placeholder="Co-Writers"
+                                dropdown={false}
+                                cssClass="selector"
+                            />
 
-                                {gasTypes.map(gasType => {
-                                    let displayValue = gasType;
+                        </Elements>
+                        <Submit isFormComplete={isFormComplete}>
+                            <input type="submit" value={t("Add")}/>
+                        </Submit>
+                        {successMessage && <p>{successMessage}</p>}
+                    </Form>
+                </div>
+                <Reports>
+                    {
+                        reports.map((report, index) => (
+                            <Component key={index}>
+                                <TruncatedText>{removeAccents(report.title)}</TruncatedText>
+                                <p>{removeAccents(report.date)}</p>
+                            </Component>
+                        ))
+                    }
 
-                                    if (gasType === "CO2 non bio") {
-                                        displayValue = "CO2nb";
-                                    } else if (gasType === "CO2 bio") {
-                                        displayValue = "CO2b";
-                                    }
-
-                                    return (
-                                        <option key={gasType} value={displayValue}>
-                                            {displayValue}
-                                        </option>
-                                    )
-                                })}
-                            </Select>
-                            <Select name="sector" value={sector} onChange={e => setSector(e.target.value)}>
-                                <option value="1">Sector 1</option>
-                                <option value="2">Sector 2</option>
-                                <option value="3">Sector 3</option>
-                            </Select>
-                        </Selects>
-                    </Elements>
-                    <Submit isFormComplete={isFormComplete}>
-                        <input type="submit" value={t("Add")}/>
-                    </Submit>
-                    {successMessage && <p>{successMessage}</p>}
-                </Form>
-
-                <Form onSubmit={handleSubmit}>
-                    <Elements>
-                        <Input
-                            type="text"
-                            name="titleReport"
-                            placeholder={index === null ? "Select a date of Data" : "Enter " + dataGas[index] + " Analysis Report Name"}
-                            value={address}
-                            onChange={e => setAddress(e.target.value)}
-                            disabled={index === null}
-                        />
-                        <Selects>
-                            <Select
-                                name="dateData"
-                                value={formulaGas}
-                                onChange={e => {
-                                    setFormulaGas(e.target.value)
-                                    const selectedIndex = e.target.options.selectedIndex;
-                                    setIndex(selectedIndex - 1);
-                                }}
-                            >
-                                <option value="" disabled>
-                                    {t('Date')}
-                                </option>
-
-                                {dataAgency.map(data => {
-                                    let displayValue = data;
-                                    return (
-                                        <option key={data} value={displayValue}>
-                                            {displayValue}
-                                        </option>
-                                    )
-                                })}
-                            </Select>
-                            <Select name="sector" value={sector} onChange={e => setSector(e.target.value)}>
-                                <option value="1">Sector 1</option>
-                                <option value="2">Sector 2</option>
-                                <option value="3">Sector 3</option>
-                            </Select>
-                        </Selects>
-                    </Elements>
-                    <Submit isFormComplete={isFormComplete}>
-                        <input type="submit" value={t("Add")}/>
-                    </Submit>
-                    {successMessage && <p>{successMessage}</p>}
-                </Form>
-            </div>
-            <Reports>
-                {
-                    reports.map((report, index) => (
-                        <Component key={index}>
-                            <TruncatedText>{removeAccents(report.title)}</TruncatedText>
-                            <p>{removeAccents(report.date)}</p>
-                        </Component>
-                    ))
-                }
-
-                {
-                    sensors.map((sensor, index) => (
-                        <Component key={index}>
-                            <TruncatedText>{sensor.city}</TruncatedText>
-                            <p>{sensor.name}</p>
-                        </Component>
-                    ))
-                }
-            </Reports>
-        </Container>
+                    {
+                        sensors.map((sensor, index) => (
+                            <Component key={index}>
+                                <TruncatedText>{sensor.city}</TruncatedText>
+                                <p>{sensor.name}</p>
+                            </Component>
+                        ))
+                    }
+                </Reports>
+            </Container>
+        </>
     );
 }
 
@@ -480,6 +535,29 @@ const TruncatedText = styled.h2`
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 500px; // Adjust this value to suit your needs
+`;
+
+const GlobalStyles = createGlobalStyle`
+
+    .selector {
+        display: block !important;
+        border-radius: 7px !important;
+        background-color: #fffffe !important;
+        font-size: 1rem !important;
+        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
+        color: #020204 !important;
+        border-width: 1.5px !important;
+        border-color: #dcdcdc !important;
+        max-width: 10rem !important;
+        max-height: 10rem !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+
+        :hover {
+            cursor: pointer;
+        }
+    }
 `;
 
 const Elements = styled.div`
@@ -609,7 +687,7 @@ const Input = styled.input`
     }
 `;
 
-const Select = styled.select `
+const Selector = styled.select `
     border-radius: 7px;
     border: 1.5px solid #dcdcdc;
     background-color: #fffffe;
@@ -617,6 +695,8 @@ const Select = styled.select `
     font-size: 1rem;
     color: #0f0e17;
     font-family: 'FoundersGrotesk-Medium', sans-serif;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 
     &:focus {
         outline: none;

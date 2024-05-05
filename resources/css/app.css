@@ -98,6 +98,36 @@
     font-style: normal;
 }
 
+.selector .mbsc-control-w {
+    border-radius: 7px;
+    border: 1.5px solid #dcdcdc;
+    background-color: #fffffe;
+    padding: 1rem;
+    font-size: 1rem;
+    color: #0f0e17;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    &:focus {
+        outline: none;
+        font-size: 1rem;
+    }
+}
+
+.selector ::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+}
+.selector ::-moz-placeholder { /* Firefox 19+ */
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+}
+.selector :-ms-input-placeholder { /* IE 10+ */
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+}
+.selector :-moz-placeholder { /* Firefox 18- */
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+}
+
 /* Add the rest of your fonts here, following the same pattern. */
 
 .title1, .title2 {

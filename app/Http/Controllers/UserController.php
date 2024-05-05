@@ -128,6 +128,28 @@ class UserController extends Controller
         }
     }
 
+    public function getAdminsInSameAgency(Request $request) {
+        if ($request->user()) {
+            $firstName = $request->user()->firstName;
+            $lastName = $request->user()->lastName;
+            $admins = DB::select("
+                SELECT Personnel.firstName, Personnel.lastName
+                FROM Personnel
+                    INNER JOIN Agences ON Personnel.idAgence = Agences.idAgence
+                WHERE Personnel.idPost = 3
+                  AND Agences.idAgence = (
+                    SELECT idAgence
+                    FROM Personnel
+                    WHERE firstName = :firstName1 AND lastName = :lastName1
+                )
+                  AND NOT (Personnel.firstName = :firstName2 AND Personnel.lastName = :lastName2);
+            ", ['firstName1' => $firstName, 'lastName1' => $lastName, 'firstName2' => $firstName, 'lastName2' => $lastName]);
+            return response()->json($admins);
+        } else {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+    }
+
 }
 
 
