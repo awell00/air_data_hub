@@ -9,7 +9,7 @@ import '@mobiscroll/react/dist/css/mobiscroll.min.css';
 import { Select, Input, setOptions, localeFr } from '@mobiscroll/react';
 import { createGlobalStyle } from 'styled-components';
 import Test from '../utils/Test';
-const worker = new Worker(new URL('./worker.js', import.meta.url))
+const worker = new Worker(new URL('./worker.ts', import.meta.url))
 
 setOptions({
     locale: localeFr,

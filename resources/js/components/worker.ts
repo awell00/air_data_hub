@@ -1,11 +1,12 @@
+import Radar from 'radar-sdk-js';
+
 self.onmessage = async (event) => {
     const data = event.data;
 
-    const sensorsValue = await Promise.all(data.map(async (item) => {
+    const sensorsValue = await Promise.all(data.map(async (item: { latSensor: any; longSensor: any; nameGas: any; }) => {
         let city = '';
-        await fetch(`https://api.radar.io/v1/geocode/reverse?coordinates=${item.latSensor},${item.longSensor}`)
-            .then(response => response.json())
-            .then((result) => {
+        await Radar.reverseGeocode({ latitude: item.latSensor, longitude: item.longSensor })
+            .then((result: { addresses: any; }) => {
                 const { addresses } = result;
                 let formattedAddress = addresses[0]?.formattedAddress || '';
                 let addressParts = formattedAddress.split(',');
@@ -15,7 +16,7 @@ self.onmessage = async (event) => {
                     city = formattedAddress;
                 }
             })
-            .catch((err) => {
+            .catch((err: any) => {
                 // handle error
             });
 
