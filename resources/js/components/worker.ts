@@ -1,4 +1,5 @@
 import Radar from 'radar-sdk-js';
+Radar.initialize(import.meta.env.VITE_RADAR);
 
 self.onmessage = async (event) => {
     const data = event.data;
