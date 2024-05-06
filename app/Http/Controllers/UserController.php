@@ -11,7 +11,8 @@ class UserController extends Controller
     {
         if ($request->user()) {
             $fullName = $request->user()->firstName . ' ' . $request->user()->lastName;
-            return response()->json(['name' => $fullName]);
+            $role = $request->user()->role;
+            return response()->json(['name' => $fullName, 'role' => $role]);
         } else {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }

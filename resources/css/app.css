@@ -98,6 +98,10 @@
     font-style: normal;
 }
 
+.mbsc-ios .mbsc-form-grid .mbsc-textfield-wrapper {
+    margin: 0.75em 1em !important;
+}
+
 .selector .mbsc-control-w {
     border-radius: 7px;
     border: 1.5px solid #dcdcdc;

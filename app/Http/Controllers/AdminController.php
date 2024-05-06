@@ -11,7 +11,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'role' => 'required|in:user,admin,agent,chef',
+            'role' => 'required|in:user,admin,agent,chef,technician',
         ]);
 
         $user = User::find($request->user_id);

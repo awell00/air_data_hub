@@ -20,6 +20,7 @@
         "src",
         "resources/js/components",
         "resources/js/utils",
-        "vite-env.d.ts"
+        "vite-env.d.ts",
+        "custom.d.ts"
     ]
 }

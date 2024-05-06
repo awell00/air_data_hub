@@ -4,10 +4,12 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import {removeAccents} from '../utils/Auth';
+import '../../css/mobiscroll.javascript.min.css'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css';
-import { Select, setOptions, localeFr } from '@mobiscroll/react';
+import { Select, Input, setOptions, localeFr } from '@mobiscroll/react';
 import { createGlobalStyle } from 'styled-components';
-
+import Test from '../utils/Test';
+const worker = new Worker(new URL('./worker.js', import.meta.url))
 
 setOptions({
     locale: localeFr,
@@ -70,12 +72,32 @@ const App: React.FC = () => {
     const [dataGas, setDataGas] = useState([]);
     const [index, setIndex] = useState<number | null>(null);
     const access_token = localStorage.getItem('access_token');
+    const [title, setTitle] = useState("AIR DATA HUB");
+    const [role, setRole] = useState<string | null>(null);
+    const [isVisible, setIsVisible] = useState(false);
 
     const resetForm = () => {
         setAddress("");
         setFormulaGas("");
         setSector("");
     };
+
+    useEffect(() => {
+        const handleResize = () => {
+            // If the window width is less than or equal to 450, set the title to "ADH"
+            // Otherwise, set the title to "AIR DATA HUB"
+            setTitle(window.innerWidth <= 450 ? "ADH" : "AIR DATA HUB");
+        };
+
+        // Add the resize event listener
+        window.addEventListener('resize', handleResize);
+
+        handleResize();
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     useEffect(() => {
         const browserLang = navigator.language.split('-')[0];
@@ -108,6 +130,7 @@ const App: React.FC = () => {
 
             const data = await response.json();
             setUser(data);
+            setRole(data.role);
         };
 
         fetchUser();
@@ -144,17 +167,6 @@ const App: React.FC = () => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        // Assuming your form inputs have the names 'address', 'gasName', and 'sector'
-        const target = event.target as typeof event.target & {
-            address: { value: string };
-            formulaGas: { value: string };
-            sector: { value: string };
-        };
-
-        const address = target.address.value;
-        const formulaGas = target.formulaGas.value;
-        const sector = target.sector.value;
-
         // Get latitude and longitude from Radar
         let lat, long;
         await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
@@ -179,7 +191,6 @@ const App: React.FC = () => {
             return;
         }
 
-        console.log(lat, long, formulaGas, sector);
         const response = await fetch('/api/add-sensor', {
             method: 'POST',
             headers: {
@@ -191,7 +202,7 @@ const App: React.FC = () => {
                 longSensor: long,
                 formulaGas: formulaGas,
                 idSector: sector,
-                coWriters: selectedCoWriters
+
             })
         });
 
@@ -216,6 +227,58 @@ const App: React.FC = () => {
 
             // Add the new sensor to the sensors state
             setSensors(prevSensors => [...prevSensors, { name: data.newSensor.nameGas, city: city }]);
+
+            setIsVisible(true);
+            setTimeout(() => {
+                setIsVisible(false);
+                setSuccessMessage("");
+            }, 5000);
+        }
+    }
+
+    const handleSubmitReport = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        // Assuming your form inputs have the names 'address', 'gasName', and 'sector'
+        const target = event.target as typeof event.target & {
+            titleReport: { value: string };
+            dataDate: { value: string };
+        };
+
+        const titleReport = target.titleReport.value;
+        const dataDate = target.dataDate.value;
+        const coWriters = selectedCoWriters;
+
+        const access_token = localStorage.getItem('access_token');
+        if (!access_token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        const response = await fetch('/api/add-report', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                titleReport: titleReport,
+                dataDate: dataDate,
+                coWriters: coWriters,
+            })
+        });
+
+        if (!response.ok) {
+            console.log(selectedCoWriters)
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.message === 'Report added successfully') {
+            resetForm();
+            setSuccessMessage('Report added successfully');
+            setReports(prevReports => [...prevReports, { title: titleReport, date: dataDate }]);
         }
     }
 
@@ -238,27 +301,15 @@ const App: React.FC = () => {
 
         const data = await response.json();
 
-        const sensorsValue = await Promise.all(data.map(async (item: { nameGas: string; latSensor: number, longSensor: number }) => {
-            let city = '';
-            await Radar.reverseGeocode({ latitude: item.latSensor, longitude: item.longSensor })
-                .then((result) => {
-                    const { addresses } = result;
-                    let formattedAddress = addresses[0]?.formattedAddress || '';
-                    let addressParts = formattedAddress.split(',');
-                    if (addressParts.length >= 2) {
-                        city = addressParts[0].trim() + ' | ' + addressParts[1].trim();
-                    } else {
-                        city = formattedAddress;
-                    }
-                })
-                .catch((err) => {
-                    // handle error
-                });
+        // Send the sensor data to the web worker
+        worker.postMessage(data);
 
-            return { name: item.nameGas, city: city };
-        }));
-
-        setSensors(sensorsValue);
+        // Listen for messages from the web worker
+        worker.onmessage = (event) => {
+            // The web worker has finished reverse geocoding the sensor data
+            const sensorsValue = event.data;
+            setSensors(sensorsValue);
+        };
     };
 
     useEffect(() => {
@@ -370,7 +421,7 @@ const App: React.FC = () => {
             <Container>
                 <Nav>
                     <Redirection href="/">
-                        <Title>AIR DATA HUB</Title>
+                        <Title>{title}</Title>
                     </Redirection>
                     <LogoutButton onClick={handleLogout}>{t("Log out")}</LogoutButton>
                 </Nav>
@@ -383,103 +434,198 @@ const App: React.FC = () => {
                         <p>Loading...</p>
                     )}
                 </UserInfo>
-                <div>
-
+                {role === 'technician' && (
                     <Form onSubmit={handleSubmit}>
                         <Elements>
-                            <Input type="text" name="address" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} />
+                            <InputComponent type="text" name="address" placeholder="Address" value={address}
+                                            onChange={e => setAddress(e.target.value)}/>
                             <Selects>
-                                <Selector
+                                <Select
                                     name="formulaGas"
                                     value={formulaGas}
-                                    onChange={e => setFormulaGas(e.target.value)}
-                                >
-                                    <option value="" disabled>
-                                        {t('Gases')}
-                                    </option>
+                                    onChange={(event) => setFormulaGas(event.value)}
+                                    data={[
+                                        { text: t('Gases'), value: '', disabled: true },
+                                        ...gasTypes.map(gasType => {
+                                            let displayValue = gasType;
 
-                                    {gasTypes.map(gasType => {
-                                        let displayValue = gasType;
+                                            if (gasType === "CO2 non bio") {
+                                                displayValue = "CO2nb";
+                                            } else if (gasType === "CO2 bio") {
+                                                displayValue = "CO2b";
+                                            }
 
-                                        if (gasType === "CO2 non bio") {
-                                            displayValue = "CO2nb";
-                                        } else if (gasType === "CO2 bio") {
-                                            displayValue = "CO2b";
-                                        }
+                                            return { text: displayValue, value: displayValue };
+                                        })
+                                    ]}
+                                    touchUi={false}
+                                    dropdown={false}
+                                    inputStyle={"outline selectorData" as any}
+                                    cssClass="selectorD"
+                                    placeholder="Gas"
+                                />
 
-                                        return (
-                                            <option key={gasType} value={displayValue}>
-                                                {displayValue}
-                                            </option>
-                                        )
-                                    })}
-                                </Selector>
-                                <Selector name="sector" value={sector} onChange={e => setSector(e.target.value)}>
-                                    <option value="1">Sector 1</option>
-                                    <option value="2">Sector 2</option>
-                                    <option value="3">Sector 3</option>
-                                </Selector>
+                                <Select
+                                    name="sector"
+                                    value={sector}
+                                    data={[
+                                        { text: t('Sectors'), value: '', disabled: true },
+                                        {text: 'Sector 1', value: 1},
+                                        {text: 'Sector 2', value: 2},
+                                        {text: 'Sector 3', value: 3},
+                                    ]}
+                                    touchUi={false}
+                                    inputStyle={"outline selectorData" as any}
+                                    placeholder="Sector"
+                                    dropdown={false}
+                                    cssClass="selectorD"
+                                    onChange={(event) => setSector(event.value)}
+                                />
+
                             </Selects>
                         </Elements>
                         <Submit isFormComplete={isFormComplete}>
                             <input type="submit" value={t("Add")}/>
                         </Submit>
-                        {successMessage && <p>{successMessage}</p>}
-                    </Form>
 
-                    <Form onSubmit={handleSubmit}>
+                    </Form>
+                )}
+
+                {role === 'agent' && (
+                    <Form onSubmit={handleSubmitReport}>
                         <Elements>
-                            <Input
+                            <InputComponent
                                 type="text"
                                 name="titleReport"
-                                placeholder={index === null ? "Select a date of Data" : "Enter " + dataGas[index] + " Analysis Report Name"}
+                                placeholder={index === null ? "Select Date" : "Enter " + dataGas[index] + " Report"}
                                 value={address}
                                 onChange={e => setAddress(e.target.value)}
                                 disabled={index === null}
                             />
                             <Selects>
-                                <Selector
-                                    name="dateData"
-                                    value={formulaGas}
-                                    onChange={e => {
-                                        setFormulaGas(e.target.value)
-                                        const selectedIndex = e.target.options.selectedIndex;
-                                        setIndex(selectedIndex - 1);
+                                <Select
+                                    data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}
+                                    inputStyle={"outline selectorData" as any}
+                                    touchUi={false}
+                                    dropdown={false}
+                                    labelStyle="stacked"
+                                    placeholder="Data"
+                                    onChange={(event) => {
+                                        const selectedValue = event.value;
+                                        setFormulaGas(selectedValue);
+                                        const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
+                                        setIndex(selectedIndex);
                                     }}
-                                >
-                                    <option value="" disabled>
-                                        {t('Date')}
-                                    </option>
-
-                                    {dataAgency.map(data => {
-                                        let displayValue = data;
-                                        return (
-                                            <option key={data} value={displayValue}>
-                                                {displayValue}
-                                            </option>
-                                        )
-                                    })}
-                                </Selector>
-
+                                    cssClass="selectorD"
+                                />
+                                <Select
+                                    data={[{ text: t('Co-Writers'), value: '', disabled: true }, ...admins.map(admin => removeAccents(admin))]}
+                                    selectMultiple={true}
+                                    touchUi={false}
+                                    inputStyle={"outline selector" as any}
+                                    labelStyle={"stacked labelStyle" as any}
+                                    placeholder="Co-Writers"
+                                    dropdown={false}
+                                    cssClass="selectorD"
+                                    onChange={(event) => setSelectedCoWriters(event.value)}
+                                />
                             </Selects>
-                            <Select
-                                data={admins.map(admin => removeAccents(admin))}
-                                selectMultiple={true}
-                                touchUi={false}
-                                inputStyle={"outline selector" as any}
-                                labelStyle="stacked"
-                                placeholder="Co-Writers"
-                                dropdown={false}
-                                cssClass="selector"
-                            />
-
                         </Elements>
                         <Submit isFormComplete={isFormComplete}>
                             <input type="submit" value={t("Add")}/>
                         </Submit>
-                        {successMessage && <p>{successMessage}</p>}
                     </Form>
-                </div>
+
+                )}
+
+                {role === 'agent' && (
+                    <InnerDiv>
+                        <Input
+                            inputStyle={"outline inputComponent1" as any}
+                            type="text"
+                            name="titleReport"
+                            placeholder={index === null ? "Need to select Data..." : "Enter " + dataGas[index] + " Report"}
+                            onChange={(e: {
+                                target: { value: React.SetStateAction<string>; };
+                            }) => setAddress(e.target.value)}
+                            disabled={index === null}
+                        />
+                        <Select
+                            data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}
+                            inputStyle={"outline inputComponent2" as any}
+                            touchUi={false}
+                            dropdown={false}
+                            placeholder="Select Data..."
+                            onChange={(event) => {
+                                const selectedValue = event.value;
+                                setFormulaGas(selectedValue);
+                                const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
+                                setIndex(selectedIndex);
+                            }}
+                            cssClass="selectorD"
+                        />
+                        <Select
+                            data={[{ text: t('Co-Writers'), value: '', disabled: true },...admins.map(admin => removeAccents(admin))]}
+                            inputStyle={"outline inputComponent3" as any}
+                            touchUi={false}
+                            dropdown={false}
+                            placeholder="Select Co-Writers..."
+                            selectMultiple={true}
+                            labelStyle="stacked"
+                            cssClass="selectorD"
+                            onChange={(event) => setSelectedCoWriters(event.value)}
+                        />
+                        <Submit isFormComplete={isFormComplete}>
+                            <input type="submit" value={t("Add")}/>
+                        </Submit>
+                    </InnerDiv>
+                )}
+
+                {role === 'technician' && (
+                    <InnerDiv>
+                        <Input
+                            inputStyle={"outline inputComponent1" as any}
+                            type="text"
+                            name="titleReport"
+                            placeholder={index === null ? "Need to select Data..." : "Enter " + dataGas[index] + " Report"}
+                            onChange={(e: {
+                                target: { value: React.SetStateAction<string>; };
+                            }) => setAddress(e.target.value)}
+                            disabled={index === null}
+                        />
+                        <Select
+                            data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}
+                            inputStyle={"outline inputComponent2" as any}
+                            touchUi={false}
+                            dropdown={false}
+                            placeholder="Select Data..."
+                            onChange={(event) => {
+                                const selectedValue = event.value;
+                                setFormulaGas(selectedValue);
+                                const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
+                                setIndex(selectedIndex);
+                            }}
+                            cssClass="selectorD"
+                        />
+                        <Select
+                            data={[{ text: t('Co-Writers'), value: '', disabled: true },...admins.map(admin => removeAccents(admin))]}
+                            inputStyle={"outline inputComponent3" as any}
+                            touchUi={false}
+                            dropdown={false}
+                            placeholder="Select Co-Writers..."
+                            selectMultiple={true}
+                            labelStyle="stacked"
+                            cssClass="selectorD"
+                            onChange={(event) => setSelectedCoWriters(event.value)}
+                        />
+                        <Submit isFormComplete={isFormComplete}>
+                            <input type="submit" value={t("Add")}/>
+                        </Submit>
+                    </InnerDiv>
+                )}
+
+                {successMessage && <Success className={successMessage ? 'fadeOut' : ''}>{successMessage}</Success>}
+
                 <Reports>
                     {
                         reports.map((report, index) => (
@@ -528,22 +674,118 @@ const Nav = styled.div`
     position: fixed;
     top: 0;
     background-color: #fffffe;
+    z-index: 1000;
 `
+const InnerDiv = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    display: none;
+
+    @media (max-width: 650px) {
+        display: flex;
+    }
+`;
 
 const TruncatedText = styled.h2`
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 500px; // Adjust this value to suit your needs
+    max-width: 800px;
+
+    @media (min-width: 1100px) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 600px;
+    }
 `;
 
 const GlobalStyles = createGlobalStyle`
+
+    .inputComponent1 {
+        border-radius: 7px 7px 0 0 !important;
+        border-bottom: none !important;
+        width: 25rem !important;
+        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
+        border-width: 1.5px !important;
+        border-color: #dcdcdc !important;
+        margin: 0 0 !important;
+
+        @media (max-width: 450px) {
+            width: 89vw !important;
+        }
+    }
+
+    .inputComponent2 {
+        border-radius: 0 !important;
+        border-bottom: none !important;
+        width: 25rem !important;
+        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
+        border-width: 1.5px !important;
+        border-color: #dcdcdc !important;
+        margin: 0 0 !important;
+
+        @media (max-width: 450px) {
+            width: 89vw !important;
+        }
+    }
+
+    .inputComponent3 {
+        border-radius: 0 0 7px 7px !important;
+        width: 25rem !important;
+        border-width: 1.5px !important;
+        border-color: #dcdcdc !important;
+        margin: 0 0 !important;
+        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+
+        @media (max-width: 450px) {
+            width: 89vw !important;
+        }
+    }
+
+    .selectorD {
+        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
+    }
+
+    .selectorData {
+        width: 7rem !important;
+        display: block !important;
+        height: 2.9rem !important;
+        border-radius: 7px !important;
+        background-color: #fffffe !important;
+        font-size: 1rem !important;
+        border-width: 1.5px !important;
+        margin: 0 !important;
+        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
+        color: #020204 !important;
+        border-width: 1.5px !important;
+        border-color: #dcdcdc !important;
+        max-width: 7rem !important;
+        max-height: 10rem !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+
+        :hover {
+            cursor: pointer;
+        }
+    }
+
+    .mbsc-ios.mbsc-textfield-wrapper-box, .mbsc-ios.mbsc-textfield-wrapper-outline {
+        margin: 0;
+    }
 
     .selector {
         display: block !important;
         border-radius: 7px !important;
         background-color: #fffffe !important;
         font-size: 1rem !important;
+        border-width: 1.5px !important;
+        margin: 0 !important;
         font-family: 'FoundersGrotesk-Regular', sans-serif !important;
         color: #020204 !important;
         border-width: 1.5px !important;
@@ -557,6 +799,18 @@ const GlobalStyles = createGlobalStyle`
         :hover {
             cursor: pointer;
         }
+    }
+
+    @keyframes fadeOut {
+        0% { opacity: 1; }
+        60% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+
+    .fadeOut {
+        animation-name: fadeOut;
+        animation-duration: 5s;
+        animation-fill-mode: forwards;
     }
 `;
 
@@ -579,6 +833,10 @@ const Form = styled.form`
 
     @media (max-width: 640px) {
         flex-direction: column;
+    }
+
+    @media (max-width: 650px) {
+        display: none;
     }
 `
 
@@ -619,6 +877,13 @@ const Redirection = styled.a`
     text-decoration: none;
 `
 
+const Success = styled.p`
+    color: #0f0e17;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+    margin: 1rem 0;
+    text-align: center;
+`
+
 const Reports = styled.div`
     display: flex;
     flex-direction: column;
@@ -636,8 +901,8 @@ const Reports = styled.div`
 
 const Submit = styled.div<{ isFormComplete: boolean }>`
     input {
-        margin: 1rem;
-        padding: 1rem 2rem;
+        margin: 1rem 0;
+        padding: .75rem 1.7rem;
         border-radius: 7px;
         border: #dcdcdc 1.5px solid;
         background-color: ${props => props.isFormComplete ? '#dcdcdc' : '#f9f9f9'};
@@ -652,6 +917,10 @@ const Submit = styled.div<{ isFormComplete: boolean }>`
             background-color: #dcdcdc;
         }
 
+        @media (max-width: 650px) {
+            width: 25rem;
+        }
+
         @media (max-width: 450px) {
             width: 89vw;
         }
@@ -659,11 +928,12 @@ const Submit = styled.div<{ isFormComplete: boolean }>`
 `;
 
 
-const Input = styled.input`
+const InputComponent = styled.input`
     padding: 1rem;
+    height: 2.9rem;
     border: 1.5px solid #dcdcdc;
     border-radius: 7px;
-    margin: 0 0 0 30px;
+    margin: 0 0 0 16px;
     width: 25rem;
     font-size: 1rem;
     font-family: 'FoundersGrotesk-Regular', sans-serif;
@@ -673,8 +943,8 @@ const Input = styled.input`
         width: 49vw;
     }
 
-    @media (max-width: 816px) {
-        width: 45vw;
+    @media (max-width: 1000px) {
+        width: 30vw;
     }
 
     ::placeholder {
@@ -717,14 +987,19 @@ const Component = styled.div`
         width: calc(50% - 60px);
     }
 
-    @media (max-width: 768px) {
+
+    @media (max-width: 1100px) {
+        width: 90vw;
+    }
+
+   /* @media (max-width: 768px) {
         margin: 30px auto;
         width: 500px;
     }
 
     @media (max-width: 550px) {
         width: 90vw;
-    }
+    }*/
 
 
 

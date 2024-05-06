@@ -13,7 +13,7 @@
     <!-- Styles -->
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css' rel='stylesheet' />
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
-
+    <link href="../css/mobiscroll.javascript.min.css" rel="stylesheet" />
 
     @vitereactrefresh
     @vite(['resources/sass/app.scss', 'resources/js/app.ts'])
