@@ -15,6 +15,13 @@ class AdminController extends Controller
         ]);
 
         $user = User::find($request->user_id);
+
+        // Check if the user is an admin
+        if ($user->role === 'admin') {
+            // If the user is an admin, don't change their role
+            return response()->json(['message' => 'Cannot change the role of an admin user'], 403);
+        }
+
         $user->role = $request->role;
         $user->save();
 
