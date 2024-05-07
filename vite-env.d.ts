@@ -4,6 +4,7 @@ interface ImportMetaEnv {
   VITE_RADAR: string;
   VITE_MAPBOX: string;
   VITE_ADMIN_EMAIL: string;
+  VITE_HERE_API_KEY: string;
 }
 
 interface ImportMeta {
