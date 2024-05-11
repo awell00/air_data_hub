@@ -22,6 +22,14 @@ Route::get('/management', function () {
     return view('management');
 });
 
-Route::get('/sensor', function () {
-    return view('sensor');
+Route::get('/sensor/{id}', function ($id) {
+
+    $sensor = DB::select('
+        select Sensors.longSensor, Sensors.latSensor, Gases.nameGas, Personnel.firstName, Personnel.lastName
+        from Sensors
+        inner join Gases on Sensors.idGas = Gases.idGas
+        inner join Personnel on Sensors.idPersonnel = Personnel.idPersonnel
+        where Sensors.idSensor = :id;
+    ', ['id' => $id]);
+    return view('sensor', ['sensor' => $sensor[0]]);
 });

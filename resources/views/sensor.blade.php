@@ -19,6 +19,9 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.ts'])
 </head>
 <body>
-<div id="sensor"></div>
+<div id="sensor"
+     data-sensor="{{ json_encode($sensor) }}"
+></div>
+{{--<div id="sensor"></div>--}}
 </body>
 </html>

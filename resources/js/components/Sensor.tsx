@@ -72,7 +72,14 @@ const App: React.FC = () => {
     const [personnel, setPersonnel] = useState<Personnel[]>([]);
     const access_token = localStorage.getItem('access_token');
 
-    const resetForm = () => {
+    const sensorElement = document.getElementById('sensor');
+    let sensor = null;
+
+    if (sensorElement && sensorElement.dataset.sensor) {
+        sensor = JSON.parse(sensorElement.dataset.sensor);
+        console.log(sensor);
+    }
+/*    const resetForm = () => {
         setAddress("");
         setFormulaGas("");
         setSector("");
@@ -207,12 +214,15 @@ const App: React.FC = () => {
 
     useEffect(() => {
         fetchSensors();
-    }, []);
+    }, []);*/
 
     return (
         <>
             <GlobalStyles />
             <Container>
+                <Navigation/>
+                <h1>{sensor.name}</h1>
+                <p>{sensor.description}</p>
             </Container>
         </>
     );
