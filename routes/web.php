@@ -21,3 +21,7 @@ Route::get('/info', function () {
 Route::get('/management', function () {
     return view('management');
 });
+
+Route::get('/sensor', function () {
+    return view('sensor');
+});

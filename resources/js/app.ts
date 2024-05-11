@@ -17,3 +17,4 @@ import './components/Login.tsx';
 import './components/Signup.tsx';
 import './components/Info.tsx';
 import './components/Management.tsx';
+import './components/Sensor.tsx';

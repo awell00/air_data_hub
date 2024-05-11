@@ -97,8 +97,9 @@ const App: React.FC = () => {
     const [selectedGas, setSelectedGas] = useState<GasType | ''>('');
     const [gasColors, setGasColors] = useState<string[]>();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
-    const [redirection, setRedirection] = useState("/login")
+    const [redirection, setRedirection] = useState("")
     const [numberSensors, setNumberSensors] = useState<number>(0);
+    const [role, setRole] = useState<string | null>(null);
 
     // Title related states
     const [title, setTitle] = useState("AIR DATA HUB");
@@ -107,6 +108,8 @@ const App: React.FC = () => {
     // Elements
     const titleElement = document.getElementsByClassName('title');
     const buttonElement = document.getElementsByClassName('button');
+
+    const access_token = localStorage.getItem('access_token');
 
     // Import Functions
     useLanguage();
@@ -229,6 +232,42 @@ const App: React.FC = () => {
     };
 
     useEffect(() => {
+        const fetchUser = async () => {
+            const access_token = localStorage.getItem('access_token');
+            if (!access_token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            const response = await fetch('/api/info', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if(access_token == null) {
+                setRedirection("/login")
+            } else {
+                if (data.role === 'manager') {
+                    setRedirection("/management");
+                } else {
+                    setRedirection("/info");
+                }
+            }
+        };
+
+        fetchUser();
+
+    }, []);
+
+    useEffect(() => {
         const fetchNumberOfSensors = async () => {
             try {
                 const response = await fetch('/api/numberOfSensors', {
@@ -251,16 +290,6 @@ const App: React.FC = () => {
         };
 
         fetchNumberOfSensors().catch(error => console.error('Error in fetchNumberOfSensors:', error));
-    }, []);
-
-    useEffect(() => {
-        const access_token = localStorage.getItem('access_token');
-
-        if(access_token == null) {
-            setRedirection("/login")
-        } else {
-            setRedirection("/info")
-        }
     }, []);
 
     useEffect(() => {
@@ -827,7 +856,7 @@ const GasSelector = styled.select`
 `
 
 const LoginButton = styled.button`
-    padding: 10px 20px;
+    padding: 13px 20px;
     background-color: #fffffe;
     color: #0f0e17;
     vertical-align: baseline;
