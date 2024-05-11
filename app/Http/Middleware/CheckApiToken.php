@@ -13,7 +13,8 @@ class CheckApiToken
         $token = str_replace('Bearer ', '', $header);
 
         // Replace this with the actual method to retrieve your token from the database
-        $storedToken = getenv('VITE_API_TOKEN');
+        $storedToken = config('admin.token');
+
 
         if ($token !== $storedToken) {
             return response()->json(['message' => 'Unauthorized'], 401);

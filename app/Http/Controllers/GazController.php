@@ -45,4 +45,10 @@ FROM
         $gaz = DB::select('SELECT * FROM Gases');
         return response()->json($gaz);
     }
+
+    public function numberOfSensors()
+    {
+        $sensors = DB::select('SELECT COUNT(*) as count FROM Sensors');
+        return response()->json($sensors);
+    }
 }

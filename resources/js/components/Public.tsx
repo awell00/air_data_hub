@@ -8,6 +8,8 @@ import { useLanguage } from '../utils/Auth';
 
 // Libraries for styling
 import styled from 'styled-components';
+import { Select } from '@mobiscroll/react';
+import { createGlobalStyle } from 'styled-components';
 
 // Libraries for data validation
 import { z } from 'zod';
@@ -51,7 +53,7 @@ const App: React.FC = () => {
     // Constants
     const zoomMin = 0.001678693092394923;
     const geocoderDiv = document.getElementById('search');
-    const gasSelector = document.querySelector('.gas-selector');
+    const gasSelector = document.querySelector('#selector');
 
     const gasTypeMap: { [key: string]: string } = {
         "CO2nb": "CO2 non bio",
@@ -96,6 +98,7 @@ const App: React.FC = () => {
     const [gasColors, setGasColors] = useState<string[]>();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
     const [redirection, setRedirection] = useState("/login")
+    const [numberSensors, setNumberSensors] = useState<number>(0);
 
     // Title related states
     const [title, setTitle] = useState("AIR DATA HUB");
@@ -225,7 +228,30 @@ const App: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        const fetchNumberOfSensors = async () => {
+            try {
+                const response = await fetch('/api/numberOfSensors', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+                    },
+                });
 
+                if (!response.ok) {
+                    console.error('Network response was not ok');
+                    return;
+                }
+
+                const data = await response.json();
+                setNumberSensors(data[0].count)
+            } catch (error) {
+                console.error('Error fetching number of sensors:', error);
+            }
+        };
+
+        fetchNumberOfSensors().catch(error => console.error('Error in fetchNumberOfSensors:', error));
+    }, []);
 
     useEffect(() => {
         const access_token = localStorage.getItem('access_token');
@@ -361,11 +387,26 @@ const App: React.FC = () => {
                     thirdChild.style.fontSize = '1rem';
                     thirdChild.style.backgroundColor = '#fffffe';
 
-                    const svgElement = thirdChild.querySelector('svg');
-                    if (svgElement) {
-                        svgElement.style.margin = '1px 0 0 4px';
-                        svgElement.style.fill = '#a7a9be';
-                    }
+                    const adjustBorderRadiusSVG = () => {
+                        const svgElement = thirdChild.querySelector('svg');
+                        console.log('svgElement:', svgElement); // Check if svgElement is found
+
+                        const mediaQuery = window.matchMedia('(max-width: 640px)');
+                        console.log('Viewport width:', window.innerWidth); // Log the viewport width
+                        console.log('mediaQuery.matches:', mediaQuery.matches); // Log the result of mediaQuery.matches
+
+                        if (mediaQuery.matches) {
+                            if (svgElement) {
+                                svgElement.style.margin = '0  0 3px 4px';
+                                svgElement.style.fill = '#a7a9be';
+                            }
+                        } else {
+                            if (svgElement) {
+                                svgElement.style.margin = '3px 0 0 4px';
+                                svgElement.style.fill = '#a7a9be';
+                            }
+                        }
+                    };
 
                     const adjustBorderRadius = () => {
                         const mediaQuery = window.matchMedia('(max-width: 450px)');
@@ -378,6 +419,7 @@ const App: React.FC = () => {
 
                     // Adjust the border radius immediately
                     adjustBorderRadius();
+                    adjustBorderRadiusSVG()
 
                     // Adjust the border radius when the window is resized
                     window.addEventListener('resize', adjustBorderRadius);
@@ -556,51 +598,84 @@ const App: React.FC = () => {
     });*/
 
     return (
-        <Container>
-            <Nav id="all-title-div">
-                <Title className={`title ${colorClassTitle}`} ref={titleRef}>
-                    {title}
-                </Title>
+        <>
+            <GlobalStyle />
+            <Container>
+                <Nav id="all-title-div">
+                    <Title className={`title ${colorClassTitle}`} ref={titleRef}>
+                        {title}
+                    </Title>
 
-                <Search id="search">
-                    <GasSelector
-                        ref={selectRef}
-                        onChange={e => handleGasChange(e.target.value)}
-                        className="gas-selector"
-                    >
-                        <option value="" disabled selected>
-                            {t('Gases')}
-                        </option>
+                    <Search id="search">
+                        <div id="selector">
+                            <Select
+                                name="formulaGas"
+                                onChange={e => handleGasChange(e.value)}
+                                data={[
+                                    { text: t('Gases'), value: '', disabled: true },
+                                    ...gasTypes.map(gasType => {
+                                        let displayValue = gasType;
 
-                        {gasTypes.map(gasType => {
-                            let displayValue = gasType;
+                                        if (gasType === "CO2 non bio") {
+                                            displayValue = "CO2nb";
+                                        } else if (gasType === "CO2 bio") {
+                                            displayValue = "CO2b";
+                                        }
 
-                            if (gasType === "CO2 non bio") {
-                                displayValue = "CO2nb";
-                            } else if (gasType === "CO2 bio") {
-                                displayValue = "CO2b";
-                            }
+                                        return { text: displayValue, value: displayValue };
+                                    })
+                                ]}
+                                touchUi={false}
+                                dropdown={false}
+                                inputStyle={"outline gas-selector" as any}
+                                cssClass="selectorD"
+                                placeholder="Gas"
+                            />
+                        </div>
 
-                            return (
-                                <option key={gasType} value={displayValue}>
-                                    {displayValue}
-                                </option>
-                            )
-                        })}
-                    </GasSelector>
-                </Search>
+                       {/* <GasSelector
+                            ref={selectRef}
+                            onChange={e => handleGasChange(e.target.value)}
+                            id="selector"
+                        >
+                            <option value="" disabled selected>
+                                {t('Gases')}
+                            </option>
 
-                <a href={redirection} className="button-div">
-                    <LoginButton className="button">
-                        {t('Log in')}
-                    </LoginButton>
-                </a>
-            </Nav>
-            <Map
-                ref={mapContainer}
-                className={mapLoaded ? 'map-visible' : 'map-hidden'}
-            />
-        </Container>
+                            {gasTypes.map(gasType => {
+                                let displayValue = gasType;
+
+                                if (gasType === "CO2 non bio") {
+                                    displayValue = "CO2nb";
+                                } else if (gasType === "CO2 bio") {
+                                    displayValue = "CO2b";
+                                }
+
+                                return (
+                                    <option key={gasType} value={displayValue}>
+                                        {displayValue}
+                                    </option>
+                                )
+                            })}
+                        </GasSelector>*/}
+                    </Search>
+
+                    {/*<Count>
+                    {numberSensors + ' ' + t('Sensors')}
+                </Count>*/}
+
+                    <a href={redirection} className="button-div">
+                        <LoginButton className="button">
+                            {t('Log in')}
+                        </LoginButton>
+                    </a>
+                </Nav>
+                <Map
+                    ref={mapContainer}
+                    className={mapLoaded ? 'map-visible' : 'map-hidden'}
+                />
+            </Container>
+        </>
 );
 }
 
@@ -626,6 +701,42 @@ const Container = styled.div`
     background: #0f0e17;
     height: 100vh;
     overflow: hidden;
+`
+
+const GlobalStyle = createGlobalStyle`
+    .gas-selector {
+        display: block !important;
+        margin: 0 !important;
+        width: 87px !important;
+        border: none !important;
+        font-size: 1rem !important;
+        border-radius: 10px 20px 20px 10px !important;
+        font-family: 'FoundersGrotesk-Medium', sans-serif !important;
+        color: #0f0e17 !important;
+        background-color: #fffffe !important;
+        /*box-shadow: 0 0 7px rgba(11, 11, 25, 0.15) !important;*/
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+
+        @media (max-width: 768px) {
+/*            margin-left: 10px !important;*/
+            pointer-events: all !important;
+        }
+
+        @media (max-width: 640px) {
+            height: 3.1rem !important;
+        }
+
+        @media (max-width: 450px) {
+            pointer-events: all !important;
+            border-radius: 20px !important;
+            margin-left: 0 !important;
+        }
+
+        :hover {
+            cursor: pointer !important;
+        }
+    }
 `
 
 const Map = styled.div`
@@ -666,6 +777,25 @@ const Search = styled.div`
         justify-content: center;
         flex-direction: column;
         align-items: center;
+    }
+`
+
+const Count = styled.div`
+    padding: 10px 20px;
+    background-color: #fffffe;
+    color: #0f0e17;
+    vertical-align: baseline;
+    border: none;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    border-radius: 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 0 7px rgba(11, 11, 25, 0.15);
+    text-decoration: none;
+
+
+    @media (min-width: 768px) {
+        display: none;
     }
 `
 

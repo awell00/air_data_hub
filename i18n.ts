@@ -22,6 +22,16 @@ i18n
                     "Last Name": "Last Name",
                     "Already have an account ?": "Already have an account?",
                     "Add": "Add",
+                    "Address": "Adress",
+                    "Gas": "Gas",
+                    "Sector": "Sector",
+                    "Select data": "Select Date",
+                    "Report": "Report",
+                    "Enter": "Enter",
+                    "Need to select data..." : "Need to select Data...",
+                    "Data": "Data",
+                    "Co-writerw": "Co-writer",
+                    "Sensors": "Sensors",
                 }
             },
             fr: {
@@ -39,6 +49,16 @@ i18n
                     "Welcome": "Bienvenue",
                     "Already have an account?": "Vous avez déjà un compte?",
                     "Add": "Ajouter",
+                    "Address": "Adresse",
+                    "Gas": "Gaz",
+                    "Sector": "Secteur",
+                    "Select data": "Selectionner une date",
+                    "Report": "Rapport",
+                    "Enter": "Entrer",
+                    "Need to select data..." : "Selectionner des donnees...",
+                    "Data": "Donnees",
+                    "Co-writers": "Co-auteurs",
+                    "Sensors": "Capteurs",
                 }
             }
         },

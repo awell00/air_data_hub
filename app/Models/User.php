@@ -24,7 +24,8 @@ class User extends Authenticatable
         'lastName',
         'email',
         'password',
-        'role'
+        'role',
+        'personnel_id'
     ];
 
     /**
@@ -56,11 +57,4 @@ class User extends Authenticatable
 
         ];
     }
-
-    /*protected function role(): CastsAttribute
-    {
-        return new CastsAttribute(
-            get: fn ($value) => ["user", "admin", "agent", "chef"],
-        );
-    }*/
 }

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from "react-dom/client";
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import VerificationCodeInput from '../utils/Verification';
 
 // Libraries for data validation
 import { z } from 'zod';
@@ -21,9 +22,11 @@ type FormInputProps = {
     setValue: (value: string) => void;
 };
 
+
 type InputProps = {
     isFirstNameValid?: boolean;
     isLastNameValid?: boolean;
+    isEmailValid?: boolean;
 };
 
 const SignupRequestBodySchema = z.object({
@@ -31,7 +34,8 @@ const SignupRequestBodySchema = z.object({
   lastName: z.string(),
   email: z.string().email(),
   password: z.string(),
-  role: z.enum(['admin', 'user']),
+  role: z.enum(['personnel']),
+  verificationCode: z.number(),
 });
 
 const App: React.FC = () => {
@@ -45,6 +49,9 @@ const App: React.FC = () => {
     const [isFormComplete, setFormComplete] = useState(false);
     const [isFirstNameValid, setFirstNameValid] = useState(true);
     const [isLastNameValid, setLastNameValid] = useState(true);
+    const [isEmailValid, setEmailValid] = useState(true);
+    const [verificationCode, setVerificationCode] = useState<number>();
+    const [isVerificationCodeValid, setVerificationCodeValid] = useState(true);
 
     // Translation related state variables
     const { t } = useTranslation();
@@ -89,8 +96,14 @@ const App: React.FC = () => {
         event.preventDefault();
 
         // Check if the email belongs to an admin user
-        const role = email === import.meta.env.VITE_ADMIN_EMAIL ? 'admin' : 'user';
-        console.log(role === 'admin' ? "Admin user" : "Regular user");
+        if (email === import.meta.env.VITE_ADMIN_EMAIL) {
+            setEmailValid(false);
+            console.error("Error: This email cannot be used for signup");
+            return;
+        }
+
+        const role = 'personnel';
+        console.log("Regular user");
 
         // Set the user role in the state
         setIsAdmin(role);
@@ -102,7 +115,8 @@ const App: React.FC = () => {
                 lastName,
                 email,
                 password,
-                role
+                role,
+                verificationCode
             };
 
             const parsedBody = SignupRequestBodySchema.parse(requestBody);
@@ -117,6 +131,12 @@ const App: React.FC = () => {
 
             const data = await response.json();
 
+            // if error is 422, then the user already exists
+            /*if (response.status === 422) {
+                setFirstNameValid(false);
+                setLastNameValid(false);
+            }*/
+
             // If the request is successful, redirect the user to the login page
             if (response.ok) {
                 setFirstNameValid(true);
@@ -126,6 +146,8 @@ const App: React.FC = () => {
                 if(data.errors.personnel) {
                     setFirstNameValid(false);
                     setLastNameValid(false);
+                } else if (data.errors.verificationCode) {
+                    setVerificationCodeValid(false);
                 }
             }
         } catch (error) {
@@ -169,7 +191,7 @@ const App: React.FC = () => {
                     <Label>
                         Email
                     </Label>
-                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)}/>
+                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} isEmailValid={isEmailValid}/>
                 </Value>
                 <Value>
                     <Label>
@@ -177,6 +199,7 @@ const App: React.FC = () => {
                     </Label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)}/>
                 </Value>
+                <VerificationCodeInput onCodeChange={setVerificationCode} isVerificationCodeValid={isVerificationCodeValid} setVerificationCodeValid={setVerificationCodeValid} />
 
                 <SignUpButtton isFormComplete={isFormComplete}>
                     <input type="submit" value={t("Sign up")} />
@@ -269,7 +292,8 @@ const Value = styled.div`
 const Input = styled.input<InputProps>`
     margin-top: 0.5rem;
     padding: 1rem;
-    border: ${props => props.isFirstNameValid === false || props.isLastNameValid === false ? '1.5px solid #f25f4c' : '1.5px solid #dcdcdc'};
+    height: 2.9rem;
+    border: ${props => props.isFirstNameValid === false || props.isLastNameValid === false  || props.isEmailValid === false ? '1.5px solid #f25f4c' : '1.5px solid #dcdcdc'};
     border-radius: 7px;
     width: 25rem;
     font-size: 1rem;
@@ -298,7 +322,7 @@ const InputName = styled(Input)`
 const SignUpButtton = styled.div<{ isFormComplete: boolean }>`
     input {
         margin: 1rem;
-        padding: 1rem;
+        padding: .72rem 1.7rem;
         border-radius: 7px;
         width: 25rem;
         border: #dcdcdc 1.5px solid;

@@ -44,7 +44,8 @@ class UserController extends Controller
                 FROM Sensors
                     INNER JOIN Gases ON Sensors.idGas = Gases.idGas
                     INNER JOIN Personnel ON Sensors.idPersonnel = Personnel.idPersonnel
-                WHERE Personnel.lastName = :lastName AND Personnel.firstName = :firstName;
+                WHERE Personnel.lastName = :lastName AND Personnel.firstName = :firstName
+                ORDER BY Sensors.idSensor DESC;
             ", ['lastName' => $lastName, 'firstName' => $firstName]);
             return response()->json($report);
         } else {
@@ -56,6 +57,7 @@ class UserController extends Controller
         if ($request->user()) {
             $firstName = $request->user()->firstName;
             $lastName = $request->user()->lastName;
+            $idPersonnel = $request->user()->personnel_id;
             $report = DB::select("
                 SELECT Data.dateData, Data.ppmValue, Sensors.latSensor, Sensors.longSensor, Sensors.idSensor, Gases.formulaGas
                 FROM Data
@@ -68,9 +70,9 @@ class UserController extends Controller
                 WHERE Agences.idAgence = (
                     SELECT idAgence
                     FROM Personnel
-                    WHERE firstName = :firstName AND lastName = :lastName
+                    WHERE firstName = :firstName AND lastName = :lastName AND idPersonnel = :idPersonnel
                 ) AND Reports.idReport IS NULL;
-            ", ['firstName' => $firstName, 'lastName' => $lastName]);
+            ", ['firstName' => $firstName, 'lastName' => $lastName, 'idPersonnel' => $idPersonnel]);
             return response()->json($report);
         } else {
             return response()->json(['message' => 'Unauthenticated'], 401);
@@ -129,10 +131,11 @@ class UserController extends Controller
         }
     }
 
-    public function getAdminsInSameAgency(Request $request) {
+    public function getWritersInSameAgency(Request $request) {
         if ($request->user()) {
             $firstName = $request->user()->firstName;
             $lastName = $request->user()->lastName;
+            $idPersonnel = $request->user()->personnel_id;
             $admins = DB::select("
                 SELECT Personnel.firstName, Personnel.lastName
                 FROM Personnel
@@ -141,10 +144,10 @@ class UserController extends Controller
                   AND Agences.idAgence = (
                     SELECT idAgence
                     FROM Personnel
-                    WHERE firstName = :firstName1 AND lastName = :lastName1
+                    WHERE firstName = :firstName1 AND lastName = :lastName1 AND idPersonnel = :idPersonnel
                 )
                   AND NOT (Personnel.firstName = :firstName2 AND Personnel.lastName = :lastName2);
-            ", ['firstName1' => $firstName, 'lastName1' => $lastName, 'firstName2' => $firstName, 'lastName2' => $lastName]);
+            ", ['firstName1' => $firstName, 'lastName1' => $lastName, 'firstName2' => $firstName, 'lastName2' => $lastName, 'idPersonnel' => $idPersonnel]);
             return response()->json($admins);
         } else {
             return response()->json(['message' => 'Unauthenticated'], 401);

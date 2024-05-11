@@ -130,7 +130,11 @@ const App: React.FC = () => {
                 setEmailValid(true);
                 setPasswordValid(true);
                 localStorage.setItem('access_token', data.access_token);
-                window.location.href = data.redirect_url;
+                if (data.role === 'manager') {
+                    window.location.href = '/management';
+                } else {
+                    window.location.href = data.redirect_url;
+                }
             }
 
         } catch (error) {
@@ -242,6 +246,7 @@ const Value = styled.div`
 const Input = styled.input<InputProps>`
     margin-top: 0.5rem;
     padding: 1rem;
+    height: 2.9rem;
     border: ${props => props.isEmailValid === false || props.isPasswordValid === false ? '1.5px solid #f25f4c' : '1.5px solid #dcdcdc'};
     border-radius: 7px;
     width: 25rem;
@@ -262,7 +267,7 @@ const Input = styled.input<InputProps>`
 const LoginButton = styled.div<{ isFormComplete: boolean }>`
     input {
         margin: 1rem;
-        padding: 1rem;
+        padding: .72rem 1.7rem;
         border-radius: 7px;
         width: 25rem;
         border: #dcdcdc 1.5px solid;

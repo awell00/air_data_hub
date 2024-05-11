@@ -17,3 +17,7 @@ Route::get('/signup', function () {
 Route::get('/info', function () {
     return view('info');
 });
+
+Route::get('/management', function () {
+    return view('management');
+});

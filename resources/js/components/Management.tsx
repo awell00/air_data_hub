@@ -5,10 +5,9 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import {removeAccents} from '../utils/Auth';
 import '@mobiscroll/react/dist/css/mobiscroll.min.css';
-import { Select, Input, setOptions, localeFr } from '@mobiscroll/react';
+import { Select, Input, setOptions, localeFr, Datepicker } from '@mobiscroll/react';
 import { createGlobalStyle } from 'styled-components';
 import { Navigation } from '../utils/Nav';
-
 
 setOptions({
     locale: localeFr,
@@ -50,6 +49,14 @@ interface Sensor {
     city: string;
 }
 
+interface Personnel {
+    firstName: string;
+    lastName: string;
+    startDate: string;
+    namePost: string;
+    verificationCode: number;
+}
+
 // Initialization API
 Radar.initialize(import.meta.env.VITE_RADAR);
 
@@ -58,35 +65,18 @@ const App: React.FC = () => {
     const [reports, setReports] = useState<Report[]>([]);
     const [sensors, setSensors] = useState<Sensor[]>([]);
     const { t } = useTranslation();
-    const [gasTypes, setGasTypes] = useState<string[]>([]);
-    const [dataAgency, setDataAgency] = useState([]);
-    const [admins, setAdmins] = useState([]);
-    const [selectedGas, setSelectedGas] = useState("");
-    const [selectedCoWriters, setSelectedCoWriters] = useState<string[]>([]);
     const [address, setAddress] = useState("");
     const [formulaGas, setFormulaGas] = useState("");
-    const [dataDate, setData] = useState("");
     const [sector, setSector] = useState("");
-    const [successMessage, setSuccessMessage] = useState("Sensor added successfully");
-    const [isFormComplete, setFormComplete] = useState(false);
-    const [dataGas, setDataGas] = useState([]);
-    const [index, setIndex] = useState<number | null>(null);
+    const [role, setRole] = useState("");
+    const [personnel, setPersonnel] = useState<Personnel[]>([]);
     const access_token = localStorage.getItem('access_token');
-    const [titleReport, setTitleReport] = useState("");
-    const [title, setTitle] = useState("AIR DATA HUB");
-    const [role, setRole] = useState<string | null>(null);
-    const [isVisible, setIsVisible] = useState(false);
 
     const resetForm = () => {
         setAddress("");
         setFormulaGas("");
         setSector("");
     };
-
-    useEffect(() => {
-        const browserLang = navigator.language.split('-')[0];
-        i18n.changeLanguage(browserLang);
-    }, []);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -123,6 +113,36 @@ const App: React.FC = () => {
                 return;
             }
 
+            const response = await fetch('/api/personnel', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            const personnelValue = data.map((item: { firstName: string; lastName: string, startDate: string, namePost: string, verificationCode: number}) => ({ firstName: item.firstName, lastName: item.lastName, startDate: item.startDate, namePost: item.namePost, verificationCode: item.verificationCode}));
+            console.log(personnelValue)
+            setPersonnel(personnelValue);
+        };
+
+        fetchUser();
+    }, []);
+
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const access_token = localStorage.getItem('access_token');
+            if (!access_token) {
+                window.location.href = '/login';
+                return;
+            }
+
             const response = await fetch('/api/report', {
                 method: 'GET',
                 headers: {
@@ -142,124 +162,6 @@ const App: React.FC = () => {
 
         fetchUser();
     }, []);
-
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        // Get latitude and longitude from Radar
-        let lat, long;
-        await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.length > 0) {
-                    const result = data[0];
-                    lat = result.lat;
-                    long = result.lon;
-                } else {
-                    throw new Error('No results found');
-                }
-            })
-            .catch(err => {
-                // handle error
-            });
-
-        // Make POST request to /api/add-sensor
-        const access_token = localStorage.getItem('access_token');
-        if (!access_token) {
-            window.location.href = '/login';
-            return;
-        }
-
-        const response = await fetch('/api/add-sensor', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${access_token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                latSensor: lat,
-                longSensor: long,
-                formulaGas: formulaGas,
-                idSector: sector,
-
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.message === 'Sensor added successfully') {
-            resetForm();
-            setSuccessMessage('Sensor added successfully');
-            let city = '';
-            await Radar.reverseGeocode({ latitude: lat, longitude: long })
-                .then((result) => {
-                    const { addresses } = result;
-                    let formattedAddress = addresses[0]?.formattedAddress || '';
-                    let addressParts = formattedAddress.split(',');
-                    if (addressParts.length >= 2) {
-                        city = addressParts[0].trim() + ' | ' + addressParts[1].trim();
-                    } else {
-                        city = formattedAddress;
-                    }
-                })
-                .catch((err) => {
-                    // handle error
-                });
-
-            // Add the new sensor to the sensors state
-            setSensors(prevSensors => [{ name: data.newSensor.nameGas, city: city }, ...prevSensors]);
-            setIsVisible(true);
-            setTimeout(() => {
-                setIsVisible(false);
-            }, 5000);
-        }
-    }
-
-    const handleSubmitReport = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        const access_token = localStorage.getItem('access_token');
-        if (!access_token) {
-            window.location.href = '/login';
-            return;
-        }
-
-        const response = await fetch('/api/add-report', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${access_token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                titleReport: titleReport,
-                dataDate: dataDate,
-                coWriters: selectedCoWriters,
-            })
-        });
-
-        if (!response.ok) {
-            console.log(selectedCoWriters, dataDate, titleReport);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.message === 'Report added successfully') {
-            resetForm();
-            setSuccessMessage('Report added successfully');
-
-            setReports(prevReports => [...prevReports, { title: titleReport, date: dataDate }]);
-
-            setIsVisible(true);
-            setTimeout(() => {
-                setIsVisible(false);
-            }, 5000);
-        }
-    }
 
     const fetchSensors = async () => {
         if (!access_token) {
@@ -307,105 +209,6 @@ const App: React.FC = () => {
         fetchSensors();
     }, []);
 
-    useEffect(() => {
-        const fetchGasTypes = async () => {
-            try {
-                const response = await fetch('/api/gasTypes', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    console.error('Network response was not ok');
-                    return;
-                }
-
-                const data = await response.json();
-                // Validate the data using the GasTypeSchema
-                const validatedData = GasTypeSchema.parse(data);
-                // Map the validated data to an array of gas types
-                const gasTypes = validatedData.map((item: {formulaGas: string}) => item.formulaGas);
-
-                setGasTypes(gasTypes);
-            } catch (error) {
-                if (error instanceof z.ZodError) {
-                    console.error('Validation error:', error.errors);
-                } else {
-                    console.error('Error fetching gas types:', error);
-                }
-            }
-        };
-
-        fetchGasTypes().catch(error => console.error('Error in fetchGasTypes:', error));
-    }, []);
-
-    //Get the data in agency to add in the select option of the form with request get /api/data-in-agency
-    useEffect(() => {
-        const fetchAdminsInAgency = async () => {
-            try {
-                const response = await fetch('/api/writers-in-agency', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${access_token}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    console.error('Network response was not ok');
-                    return;
-                }
-
-                const data = await response.json();
-
-                const fullName = data.map((item: {firstName: string, lastName: string}) => [item.firstName, item.lastName]);
-                const name = fullName.map((item: string[]) => item.join(" "));
-
-                setAdmins(name);
-            } catch (error) {
-                if (error instanceof z.ZodError) {
-                    console.error('Validation error:', error.errors);
-                } else {
-                    console.error('Error fetching gas types:', error);
-                }
-            }
-        };
-
-        const fetchDataInAgency = async () => {
-            try {
-                const response = await fetch('/api/data-in-agency', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${access_token}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    console.error('Network response was not ok');
-                    return;
-                }
-
-                const data = await response.json();
-
-                const dateData = data.map((item: {dateData: string}) => item.dateData);
-                const gasData = data.map((item: {formulaGas: string}) => item.formulaGas);
-
-                setDataAgency(dateData);
-                setDataGas(gasData);
-            } catch (error) {
-                if (error instanceof z.ZodError) {
-                    console.error('Validation error:', error.errors);
-                } else {
-                    console.error('Error fetching gas types:', error);
-                }
-            }
-        };
-
-        fetchAdminsInAgency().catch(error => console.error('Error in fetchGasTypes:', error));
-        fetchDataInAgency().catch(error => console.error('Error in fetchGasTypes:', error));
-    }, []);
-
     return (
         <>
             <GlobalStyles />
@@ -419,7 +222,145 @@ const App: React.FC = () => {
                         <p>Loading...</p>
                     )}
                 </UserInfo>
-                {role === 'technician' && (
+
+                <Form>
+                    <Elements>
+                        <InputComponent
+                            type="text"
+                            name="firstName"
+                            placeholder="First name"
+                   /*         value={}*/
+          /*                  onChange={e => setTitleReport(e.target.value)}*/
+                        />
+
+                        <InputComponent
+                            type="text"
+                            name="lastName"
+                            placeholder="Last name"
+                            /*         value={}*/
+                            /*                  onChange={e => setTitleReport(e.target.value)}*/
+                        />
+
+                        <Datepicker
+                            placeholder="Select date"
+                            touchUi={false}
+                            inputStyle={"outline selectorData" as any}
+                            cssClass="selectorD"
+                        />
+
+                        <InputComponent
+                            type="text"
+                            name="adress"
+                            placeholder="Adress"
+                            /*         value={}*/
+                            /*                  onChange={e => setTitleReport(e.target.value)}*/
+                        />
+
+                        <Selects>
+                            <Select
+             /*                   data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}*/
+                                inputStyle={"outline selectorData" as any}
+                                touchUi={false}
+                                dropdown={false}
+                                labelStyle="stacked"
+                                placeholder={t("Post")}
+                         /*       onChange={(event) => {
+                                    const selectedValue = event.value;
+                                    const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
+                                    setIndex(selectedIndex);
+                                    setData(selectedValue);
+                                }}*/
+                                cssClass="selectorD"
+                            />
+                        </Selects>
+                    </Elements>
+                    <Submit>
+                        <input type="submit" value={t("Add")}/>
+                    </Submit>
+                </Form>
+
+                <InnerDiv>
+                    <Input
+                        inputStyle={"outline inputComponent1" as any}
+                        type="text"
+                        name="titleReport"
+                        placeholder="First name"
+          /*              onChange={(e: {
+                            target: { value: React.SetStateAction<string>; };
+                        }) => setTitleReport(e.target.value)}
+                        disabled={index === null}*/
+                    />
+                    <Select
+                      /*  data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}*/
+                        inputStyle={"outline inputComponent2" as any}
+                        touchUi={false}
+                        dropdown={false}
+                        placeholder="Select Data..."
+                /*        onChange={(event) => {
+                            const selectedValue = event.value;
+                            const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
+                            setIndex(selectedIndex);
+                            setData(selectedValue);
+                        }}*/
+                        cssClass="selectorD"
+                    />
+                    <Select
+                /*        data={[{ text: t('Co-Writers'), value: '', disabled: true },...admins.map(admin => removeAccents(admin))]}*/
+                        inputStyle={"outline inputComponent3" as any}
+                        touchUi={false}
+                        dropdown={false}
+                        placeholder="Select Co-Writers..."
+                        selectMultiple={true}
+                        labelStyle="stacked"
+                        cssClass="selectorD"
+                      /*  onChange={(event) => setSelectedCoWriters(event.value)}*/
+                    />
+                    <Submit>
+                        <input type="submit" value={t("Add")}/>
+                    </Submit>
+                </InnerDiv>
+
+                <Personnel>
+                    {personnel.map((person, index) => (
+                        <Component key={index}>
+                            <Top>
+                                <Name>
+                                    <p> {person.firstName} </p>
+                                    <p> {person.lastName.toUpperCase()} </p>
+                                </Name>
+                                <div>
+                                    <Post role={person.namePost}> {person.namePost} </Post>
+                                </div>
+                            </Top>
+
+
+                            <Info>
+                                <p> Start Date : {person.startDate} </p>
+                                <div>
+                                    <span>Verification Code : </span>
+                                    <span
+                                        style={{
+                                            color: '#0f0e17',
+                                            backgroundColor: '#0f0e17',
+                                            borderRadius: '5px',
+                                            cursor: 'pointer',
+                                            transition: 'background-color 0.15s ease-in-out'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#f9f9f9'
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#0f0e17'
+                                        }}
+                                    >
+                                    {person.verificationCode}
+                                </span>
+                                </div>
+                            </Info>
+                        </Component>
+                    ))}
+                </Personnel>
+                {/*    {role === 'technician' && (
                     <Form onSubmit={handleSubmit}>
                         <Elements>
                             <InputComponent type="text" name="address" placeholder={t("Address")} value={address}
@@ -647,14 +588,14 @@ const App: React.FC = () => {
                             </Component>
                         ))
                     }
-                </Reports>
+                </Reports>*/}
             </Container>
         </>
     );
 }
 
 const renderApp = () => {
-    const root = document.getElementById("info");
+    const root = document.getElementById("management");
     if (root) {
         const rootContainer = ReactDOM.createRoot(root);
         rootContainer.render(
@@ -666,31 +607,6 @@ const renderApp = () => {
 }
 
 document.addEventListener('DOMContentLoaded', renderApp);
-
-const InnerDiv = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    display: none;
-
-    @media (max-width: 650px) {
-        display: flex;
-    }
-`;
-
-const TruncatedText = styled.h2`
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 800px;
-
-    @media (min-width: 1100px) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 600px;
-    }
-`;
 
 const GlobalStyles = createGlobalStyle`
     .inputComponent1,
@@ -777,6 +693,117 @@ const GlobalStyles = createGlobalStyle`
     }
 `;
 
+const Container = styled.div`
+    height: 100%;
+    background-color: #fffffe;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+`
+
+const UserInfo = styled.div`
+    margin: 110px 30px 30px;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+`;
+
+const Personnel = styled.div`
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin: 30px;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+
+    @media (max-width: 1360px) {
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        margin: 25px;
+    }
+
+    @media (max-width: 374px) {
+        align-items: center;
+        flex-direction: column;
+        margin: 20px;
+    }
+
+    @media (max-width: 290px) {
+        align-items: center;
+        flex-direction: column;
+        margin: 18px;
+    }
+`;
+
+const InnerDiv = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    display: none;
+
+    @media (max-width: 650px) {
+        display: flex;
+    }
+`;
+
+
+const Top = styled.div`
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+
+    @media (max-width: 374px) {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+`;
+
+const Name = styled.div`
+    display: flex;
+    gap: 5px;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    font-size: 1.1rem;
+`;
+
+const Info = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 1rem;
+`;
+
+const Component = styled.div`
+    background-color: #f9f9f9;
+    border: #dcdcdc 1.5px solid;
+    border-radius: 10px;
+
+    padding: 15px;
+    width: 650px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    @media (max-width: 450px) {
+        width: 88.5vw;
+    }
+
+    @media (max-width: 374px) {
+        width: 87vw;
+    }
+`;
+
+const Post = styled.div<{ role: string }>`
+    display: inline-flex;
+    padding: 7px 15px;
+    padding-top: 6px;
+    border-radius: 7px ;
+    border: 1.5px solid ${props => props.role === 'technician' ? '#1679AB' : props.role === 'writer' ? '#C73659' : '#0f0e17'};
+    background-color: ${props => props.role === 'technician' ? 'rgba(22,121,171,0.07)' : props.role === 'writer' ? 'rgba(199,54,89,0.07)' : '#0f0e17'};
+    color: ${props => props.role === 'technician' ? '#1679AB' : props.role === 'writer' ? '#C73659' : '#0f0e17'};
+    font-size: .9rem;
+`;
+
 const Elements = styled.div`
     display: flex;
     gap: 1rem;
@@ -808,32 +835,34 @@ const Selects = styled.div`
     gap: 1rem;
 `
 
-const Redirection = styled.a`
-    text-decoration: none;
-`
-
-const Success = styled.p`
-    color: #0f0e17;
-    opacity: 0;
+const InputComponent = styled.input`
+    padding: 1rem;
+    height: 2.9rem;
+    border: 1.5px solid #dcdcdc;
+    border-radius: 7px;
+    margin: 0;
+    width: 8rem;
+    font-size: 1rem;
     font-family: 'FoundersGrotesk-Regular', sans-serif;
-    text-align: center;
-`
+    color: #0f0e17;
 
-const Reports = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    /*width: 100%;*/
-    margin: 30px;
-    margin-top: 60px;
-
-    @media (min-width: 900px) {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-between;
+    @media (max-width: 640px) {
+        width: 15vw;
     }
-`
+
+    @media (max-width: 1000px) {
+        width: 15vw;
+    }
+
+    ::placeholder {
+        color: #a7a9be;
+    }
+
+    &:focus {
+        outline: none;
+        font-size: 1rem;
+    }
+`;
 
 const Submit = styled.div`
     input {
@@ -861,103 +890,4 @@ const Submit = styled.div`
             width: 89vw;
         }
     }
-`;
-
-
-const InputComponent = styled.input`
-    padding: 1rem;
-    height: 2.9rem;
-    border: 1.5px solid #dcdcdc;
-    border-radius: 7px;
-    margin: 0;
-    width: 25rem;
-    font-size: 1rem;
-    font-family: 'FoundersGrotesk-Regular', sans-serif;
-    color: #0f0e17;
-
-    @media (max-width: 640px) {
-        width: 49vw;
-    }
-
-    @media (max-width: 1000px) {
-        width: 30vw;
-    }
-
-    ::placeholder {
-        color: #a7a9be;
-    }
-
-    &:focus {
-        outline: none;
-        font-size: 1rem;
-    }
-`;
-
-const Selector = styled.select `
-    border-radius: 7px;
-    border: 1.5px solid #dcdcdc;
-    background-color: #fffffe;
-    padding: 1rem;
-    font-size: 1rem;
-    color: #0f0e17;
-    font-family: 'FoundersGrotesk-Medium', sans-serif;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-
-    &:focus {
-        outline: none;
-        font-size: 1rem;
-    }
-`
-
-const Component = styled.div`
-    background-color: #f9f9f9;
-    border: #dcdcdc 1.5px solid;
-    border-radius: 10px;
-
-    padding: 20px;
-    margin-bottom: 30px;
-
-    @media (min-width: 900px) {
-        width: calc(53% - 60px);
-    }
-
-
-    @media (max-width: 900px) {
-        width: 90vw;
-    }
-
-   /* @media (max-width: 768px) {
-        margin: 30px auto;
-        width: 500px;
-    }
-
-    @media (max-width: 550px) {
-        width: 90vw;
-    }*/
-
-
-
-    h2 {
-        color: #0f0e17;
-        font-family: 'FoundersGrotesk-Light', sans-serif;
-    }
-
-    p {
-        color: #2e2f3e;
-        font-family: 'FoundersGrotesk-Regular', sans-serif;
-    }
-`
-
-const Container = styled.div`
-    height: 100%;
-    background-color: #fffffe;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-`
-
-const UserInfo = styled.div`
-    margin: 110px 30px 30px;
-    font-family: 'FoundersGrotesk-Medium', sans-serif;
 `;

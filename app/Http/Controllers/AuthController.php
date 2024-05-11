@@ -45,6 +45,7 @@ class AuthController extends Controller
 
         return response()->json([
             'access_token' => $authToken,
+            'role' => $user->role,
             'redirect_url' => '/info'
         ]);
     }
@@ -57,25 +58,56 @@ class AuthController extends Controller
                 'lastName' => 'required',
                 'email' => 'required|email|unique:users',
                 'password' => 'required|min:8',
-                'role' => 'required|in:user,admin,agent,chef',
+                'role' => 'nullable|in:admin,personnel',
+                'verificationCode' => 'required|integer'
             ]);
 
-            $personnel = DB::select('select * from Personnel where firstName = ? AND lastName= ?', [$request->firstName, $request->lastName]);
-            if (!$personnel && $request->email != config('admin.email')) {
+            // Check if a user with the same first name and last name already exists
+            /*$existingUser = User::where('firstName', $request->firstName)
+                ->where('lastName', $request->lastName)
+                ->first();
+
+            if ($existingUser) {
                 return response()->json([
                     'message' => 'The given data was invalid.',
                     'errors' => [
-                        'personnel' => 'Personnel not found'
+                        'user' => 'User already exists'
                     ],
-                ], 404);
-            }
+                ], 422);
+            }*/
 
             if ($request->role == 'admin') {
                 $allowedAdminEmail = config('admin.email');
+                $allowedAdminVerification = config('admin.verification');
 
                 if ($request->email != $allowedAdminEmail) {
                     return response()->json(['message' => 'This email cannot be assigned the admin role'], 403);
                 }
+
+                if ($request->verificationCode != $allowedAdminVerification) {
+                    return response()->json(['message' => 'Invalid verification code for admin'], 403);
+                }
+            } else if ($request->role == 'personnel') {
+                if ($request->verificationCode <= 0 || !(DB::select('select * from Personnel where firstName = ? AND lastName= ?', [$request->firstName, $request->lastName]))) {
+                    return response()->json([
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'verificationCode' => 'Invalid verification code'
+                        ],
+                    ], 422);
+                }
+
+                $personnel = DB::select('select * from Personnel where firstName = ? AND lastName= ? AND verificationCode= ?', [$request->firstName, $request->lastName, $request->verificationCode]);
+                if (!$personnel) {
+                    return response()->json([
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'personnel' => 'Personnel not found'
+                        ],
+                    ], 404);
+                }
+
+                $role = DB::select('select namePost from Posts where idPost = ?', [$personnel[0]->idPost]);
             }
 
             $user = User::create([
@@ -83,7 +115,9 @@ class AuthController extends Controller
                 'lastName' => $request->lastName,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'role' => $request->role,
+                'role' => $request->role !='admin' ? $role[0]->namePost : 'admin',
+                'verificationCode' => $request->verificationCode,
+                'personnel_id' => $request->role != 'admin' ? $personnel[0]->idPersonnel : null,
             ]);
 
             return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
