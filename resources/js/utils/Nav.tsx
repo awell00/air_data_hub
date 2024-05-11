@@ -75,12 +75,22 @@ export const Navigation = () => {
         window.location.reload();
     };
 
+    const handleLogin = () => {
+        window.location.href = "/login";
+    };
+
+    const accessToken = localStorage.getItem('access_token');
+
     return (
         <Nav>
             <Redirection href="/">
                 <Title>{title}</Title>
             </Redirection>
-            <LogoutButton onClick={handleLogout}>{t("Log out")}</LogoutButton>
+            {accessToken ? (
+                <LogoutButton onClick={handleLogout}>{t("Log out")}</LogoutButton>
+            ) : (
+                <LogoutButton onClick={handleLogin}>{t("Log in")}</LogoutButton>
+            )}
         </Nav>
     );
 };

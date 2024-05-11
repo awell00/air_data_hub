@@ -97,7 +97,7 @@ const App: React.FC = () => {
     const [selectedGas, setSelectedGas] = useState<GasType | ''>('');
     const [gasColors, setGasColors] = useState<string[]>();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
-    const [redirection, setRedirection] = useState("")
+    const [redirection, setRedirection] = useState("/login")
     const [numberSensors, setNumberSensors] = useState<number>(0);
     const [role, setRole] = useState<string | null>(null);
 
@@ -234,11 +234,6 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchUser = async () => {
             const access_token = localStorage.getItem('access_token');
-            if (!access_token) {
-                window.location.href = '/login';
-                return;
-            }
-
             const response = await fetch('/api/info', {
                 method: 'GET',
                 headers: {
@@ -693,7 +688,7 @@ const App: React.FC = () => {
                     {numberSensors + ' ' + t('Sensors')}
                 </Count>*/}
 
-                    <a href={redirection} className="button-div">
+                    <a href={import.meta.env.VITE_APP_URL + redirection} className="button-div">
                         <LoginButton className="button">
                             {t('Log in')}
                         </LoginButton>
