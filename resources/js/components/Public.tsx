@@ -33,12 +33,18 @@ type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
 type Coordinate = [number, number];
 type Zoom = number;
 
+interface PpmSchema {
+    ppm: number;
+    idSensor: number;
+}
+
 const GasDataSchema = z.array(z.object({
     formulaGas: z.string(),
     latSensor: z.number(),
     longSensor: z.number(),
     ppmValue: z.number(),
     max_ppmValue: z.number(),
+    idSensor: z.number(),
 }));
 
 const GasTypeSchema = z.array(z.object({
@@ -93,7 +99,7 @@ const App: React.FC = () => {
 
     // Data related states
     const [coordinatesValue, setCoordinates] = useState<number[][]>([]);
-    const [ppmValue, setPpm] = useState<number[]>([]);
+    const [ppmValue, setPpm] = useState<PpmSchema[]>([]);
     const [selectedGas, setSelectedGas] = useState<GasType | ''>('');
     const [gasColors, setGasColors] = useState<string[]>();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
@@ -168,7 +174,7 @@ const App: React.FC = () => {
                 // Map the filtered data to an array of coordinates
                 const coords = filteredData.map(item => [item.longSensor, item.latSensor]);
                 // Map the filtered data to an array of ppm values normalized by the max_ppmValue
-                const ppm = filteredData.map(item => item.ppmValue/item.max_ppmValue);
+                const ppm = filteredData.map(item => ({ ppm: item.ppmValue/item.max_ppmValue, idSensor: item.idSensor }));
 
                 setPpm(ppm);
                 setCoordinates(coords);
@@ -479,6 +485,8 @@ const App: React.FC = () => {
 
                 const validCoordinates = coordinatesValue.filter(coordinate => coordinate !== undefined) as Coordinate[];
 
+                console.log(ppmValue)
+
                 if (ppmValue !== null) {
                     const geojson: GeoJSON.FeatureCollection = {
                         type: 'FeatureCollection',
@@ -490,8 +498,9 @@ const App: React.FC = () => {
                             },
                             properties: {
                                 id: index,
+                                idSensor: ppmValue[index].idSensor,
                                 radius: 5,
-                                ppm: ppmValue[index]
+                                ppm: ppmValue[index].ppm
                             }
                         }))
                     };
@@ -522,6 +531,7 @@ const App: React.FC = () => {
                                             id: 'heatmap',
                                             type: 'heatmap',
                                             source: 'points',
+                                            maxzoom: 12,
                                             'layout': {},
                                             paint: {
                                                 'heatmap-weight': ['interpolate', ['linear'], ['get', 'ppm'], 0, 0, 1, 1],
@@ -570,6 +580,41 @@ const App: React.FC = () => {
                                         },
                                         firstSymbolId
                                     );
+
+                                    if (map.current) {
+                                        map.current.addLayer({
+                                            id: 'points',
+                                            type: 'circle',
+                                            source: 'points',
+                                            minzoom: 12, // Set the minimum zoom level at which this layer will be visible
+                                            paint: {
+                                                'circle-radius': [
+                                                    'interpolate',
+                                                    ['linear'],
+                                                    ['zoom'],
+                                                    13, 30,
+                                                    14, 40,
+                                                    15, 50,
+                                                    16, 70,
+                                                ],
+                                                'circle-color': gasColors[5],
+                                            }
+                                        });
+                                    }
+
+                                    map.current.on('click', 'points', (e) => {
+                                        // Use queryRenderedFeatures to get features at the clicked point
+                                        const features = map.current!.queryRenderedFeatures(e.point, { layers: ['points'] });
+
+                                        // If a feature is found
+                                        if (features.length > 0 && features[0].properties) {
+                                            // Get the idSensor from the feature properties
+                                            const idSensor = features[0].properties.idSensor;
+
+                                            // Redirect to the /sensor/{idSensor} page
+                                            window.location.href = `/sensor/${idSensor}`;
+                                        }
+                                    });
                                 }
                             }
                         }

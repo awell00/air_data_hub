@@ -748,7 +748,7 @@ const Submit = styled.div`
         padding: .72rem 1.7rem;
         border-radius: 7px;
         border: #dcdcdc 1.5px solid;
-        background-color: '#f9f9f9';
+        background-color: #f9f9f9;
         color: #0f0e17;
         font-family: 'FoundersGrotesk-Medium', sans-serif;
         transition: background-color 0.3s, color 0.3s;

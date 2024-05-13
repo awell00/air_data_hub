@@ -79,7 +79,7 @@ const App: React.FC = () => {
                 let city = '';
                 try {
                     // @ts-ignore
-                    const result = await Radar.reverseGeocode({ latitude: sensor.latAgency, longitude: sensor.longAgency });
+                    const result = await Radar.reverseGeocode({ latitude: sensor.latSensor, longitude: sensor.longSensor });
                     const { addresses } = result;
                     city = addresses[0]?.city || '';
                 } catch (err) {
