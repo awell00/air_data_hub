@@ -419,17 +419,17 @@ const App: React.FC = () => {
                         console.log('Viewport width:', window.innerWidth); // Log the viewport width
                         console.log('mediaQuery.matches:', mediaQuery.matches); // Log the result of mediaQuery.matches
 
-                        if (mediaQuery.matches) {
+                   /*     if (mediaQuery.matches) {
                             if (svgElement) {
-                                svgElement.style.margin = '0  0 3px 4px';
+                                svgElement.style.marginTop = '3px';
                                 svgElement.style.fill = '#a7a9be';
                             }
                         } else {
                             if (svgElement) {
-                                svgElement.style.margin = '3px 0 0 4px';
+                            /!*    svgElement.style.margin = '3px 0 0 4px';*!/
                                 svgElement.style.fill = '#a7a9be';
                             }
-                        }
+                        }*/
                     };
 
                     const adjustBorderRadius = () => {

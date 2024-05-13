@@ -179,6 +179,17 @@
     display: none !important;
 }
 
+svg.mapboxgl-ctrl-geocoder--icon.mapboxgl-ctrl-geocoder--icon-search {
+    margin-top: 3px !important;
+    margin-left: 3px !important;
+    fill: #a7a9be !important;
+}
+
+.mapboxgl-ctrl-geocoder--icon-close {
+    margin-top: 6px !important;
+    fill: #a7a9be !important;
+}
+
 * {
     margin: 0;
     padding: 0;
