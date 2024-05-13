@@ -12,7 +12,13 @@ class UserController extends Controller
         if ($request->user()) {
             $fullName = $request->user()->firstName . ' ' . $request->user()->lastName;
             $role = $request->user()->role;
-            return response()->json(['name' => $fullName, 'role' => $role]);
+            $agency = DB::select('
+                SELECT Agences.longAgence, Agences.latAgence
+                FROM Personnel
+                    INNER JOIN Agences ON Personnel.idAgence = Agences.idAgence
+                WHERE Personnel.firstName = :firstName AND Personnel.lastName = :lastName;
+            ', ['firstName' => $request->user()->firstName, 'lastName' => $request->user()->lastName]);
+            return response()->json(['name' => $fullName, 'role' => $role, 'latAgency' => $agency[0]->latAgence, 'longAgency' => $agency[0]->longAgence]);
         } else {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
@@ -40,7 +46,7 @@ class UserController extends Controller
             $firstName = $request->user()->firstName;
             $lastName = $request->user()->lastName;
             $report = DB::select("
-                SELECT Sensors.latSensor, Sensors.longSensor, Gases.nameGas
+                SELECT Sensors.latSensor, Sensors.longSensor, Gases.nameGas, Sensors.idSensor
                 FROM Sensors
                     INNER JOIN Gases ON Sensors.idGas = Gases.idGas
                     INNER JOIN Personnel ON Sensors.idPersonnel = Personnel.idPersonnel
@@ -154,6 +160,19 @@ class UserController extends Controller
         }
     }
 
+    public function getReportSensor(Request $request) {
+        $idSensor = $request->route('idSensor');
+        $report = DB::select("
+               select Reports.titleReport, Reports.dateReport, Personnel.firstName, Personnel.lastName, Contain.idReport
+                from Reports
+                         INNER JOIN Contain ON Reports.idReport = Contain.idReport
+                        INNER  JOIN Data ON Contain.idData = Data.idData
+                        INNER  JOIN Do ON Reports.idReport = Do.idReport
+                        INNER JOIN Personnel ON Do.idPersonnel = Personnel.idPersonnel
+                where Data.idSensor = :id;
+            ", ['id' => $idSensor]);
+        return response()->json($report);
+    }
 }
 
 

@@ -22,6 +22,7 @@ setOptions({
 import Radar from 'radar-sdk-js';
 
 import { z } from 'zod';
+import { Link } from 'react-router-dom';
 type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
 
 const GasDataSchema = z.array(z.object({
@@ -38,6 +39,7 @@ const GasTypeSchema = z.array(z.object({
 
 interface User {
     name: string;
+    cityAgency: string;
 }
 
 interface Report {
@@ -46,6 +48,7 @@ interface Report {
 }
 
 interface Sensor {
+    id: any;
     name: string;
     city: string;
 }
@@ -108,7 +111,26 @@ const App: React.FC = () => {
             }
 
             const data = await response.json();
-            setUser(data);
+
+            console.log(data.latAgency, data.longAgency);
+
+            let city = '';
+            try {
+                // @ts-ignore
+                const result = await Radar.reverseGeocode({ latitude: data.latAgency, longitude: data.longAgency });
+                const { addresses } = result;
+                city = addresses[0]?.city || '';
+
+            } catch (err) {
+                // handle error
+            }
+
+            const user = {
+                name: data.name,
+                cityAgency: city,
+            };
+
+            setUser(user);
             setRole(data.role);
         };
 
@@ -211,7 +233,7 @@ const App: React.FC = () => {
                 });
 
             // Add the new sensor to the sensors state
-            setSensors(prevSensors => [{ name: data.newSensor.nameGas, city: city }, ...prevSensors]);
+            setSensors(prevSensors => [{ name: data.newSensor.nameGas, city: city, id: data.newSensor.idSensor }, ...prevSensors]);
             setIsVisible(true);
             setTimeout(() => {
                 setIsVisible(false);
@@ -299,7 +321,7 @@ const App: React.FC = () => {
                 });
 
             // Update the sensors state as soon as a sensor gets its address
-            setSensors(prevSensors => [...prevSensors, { name: item.nameGas, city: city }]);
+            setSensors(prevSensors => [...prevSensors, { name: item.nameGas, city: city, id: item.idSensor }]);
         }
     };
 
@@ -414,8 +436,8 @@ const App: React.FC = () => {
 
                 <UserInfo>
                     {user ? (
-                        <p>{t("Welcome")}, {removeAccents(user.name)}!</p>
-                    ) : (
+                        <><Title>{user.name}</Title><City>{user.cityAgency}</City></>
+                        ) : (
                         <p>Loading...</p>
                     )}
                 </UserInfo>
@@ -433,7 +455,6 @@ const App: React.FC = () => {
                                         { text: t('Gases'), value: '', disabled: true },
                                         ...gasTypes.map(gasType => {
                                             let displayValue = gasType;
-                                            console.log(gasType)
                                             if (gasType === "CO2 non bio") {
                                                 displayValue = "CO2nb";
                                             } else if (gasType === "CO2 bio") {
@@ -641,9 +662,11 @@ const App: React.FC = () => {
 
                     {
                         sensors.map((sensor, index) => (
-                            <Component key={index}>
-                                <TruncatedText>{sensor.city}</TruncatedText>
-                                <p>{sensor.name}</p>
+                            <Component>
+                                <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
+                                    <TruncatedText>{sensor.city}</TruncatedText>
+                                    <p>{sensor.name}</p>
+                                </a>
                             </Component>
                         ))
                     }
@@ -919,7 +942,7 @@ const Component = styled.div`
     margin-bottom: 30px;
 
     @media (min-width: 900px) {
-        width: calc(53% - 60px);
+        width: calc(53.5% - 60px);
     }
 
 
@@ -959,5 +982,21 @@ const Container = styled.div`
 
 const UserInfo = styled.div`
     margin: 110px 30px 30px;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+
+    @media (max-width: 450px) {
+        margin: 110px 20px 30px;
+    }
+`;
+
+const Title = styled.h1`
+    font-size: 2rem;
+    color: #0f0e17;
     font-family: 'FoundersGrotesk-Medium', sans-serif;
+`;
+
+const City = styled.p`
+    font-size: 1.2rem;
+    color: #2e2f3e;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
 `;

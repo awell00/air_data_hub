@@ -21,6 +21,7 @@
 <body>
 <div id="sensor"
      data-sensor="{{ json_encode($sensor) }}"
+     data-values="{{ json_encode($values) }}"
 ></div>
 {{--<div id="sensor"></div>--}}
 </body>

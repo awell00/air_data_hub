@@ -45,6 +45,7 @@ interface Report {
 }
 
 interface Sensor {
+    id: any;
     name: string;
     city: string;
 }
@@ -169,7 +170,7 @@ const App: React.FC = () => {
             return;
         }
 
-        const response = await fetch('/api/sensors', {
+        const response = await fetch('/api/sensors-in-agency', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${access_token}`,
@@ -181,7 +182,7 @@ const App: React.FC = () => {
         }
 
         const data = await response.json();
-
+        console.log(data)
         for (const item of data) {
             let city = '';
 
@@ -200,8 +201,9 @@ const App: React.FC = () => {
                     // handle error
                 });
 
+
             // Update the sensors state as soon as a sensor gets its address
-            setSensors(prevSensors => [...prevSensors, { name: item.nameGas, city: city }]);
+            setSensors(prevSensors => [...prevSensors, { name: item.nameGas, city: city, id : item.idSensor }]);
         }
     };
 
@@ -360,6 +362,20 @@ const App: React.FC = () => {
                         </Component>
                     ))}
                 </Personnel>
+
+                <Sensors>
+                    {
+                        sensors.map((sensor, index) => (
+                            <ComponentSensor>
+                                <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
+                                    <TruncatedText>{sensor.city}</TruncatedText>
+                                    <p>{sensor.name}</p>
+                                </a>
+                            </ComponentSensor>
+                        ))
+                    }
+                </Sensors>
+
             </Container>
         </>
     );
@@ -472,6 +488,19 @@ const Container = styled.div`
     flex-direction: column;
 `
 
+const TruncatedText = styled.h2`
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 800px;
+
+    @media (min-width: 1100px) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 600px;
+    }
+`;
+
 const UserInfo = styled.div`
     margin: 110px 30px 30px;
     font-family: 'FoundersGrotesk-Medium', sans-serif;
@@ -482,27 +511,24 @@ const Personnel = styled.div`
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: space-between;
-    margin: 30px;
     font-family: 'FoundersGrotesk-Regular', sans-serif;
+    border-bottom: #f9f9f9 3px solid;
 
-    @media (max-width: 1360px) {
+    @media (max-width: 900px) {
         justify-content: center;
         align-items: center;
         flex-direction: column;
-        margin: 25px;
+    }
+
+    @media (min-width: 900px) {
+        margin: 30px;
     }
 
     @media (max-width: 374px) {
         align-items: center;
         flex-direction: column;
-        margin: 20px;
     }
 
-    @media (max-width: 290px) {
-        align-items: center;
-        flex-direction: column;
-        margin: 18px;
-    }
 `;
 
 const InnerDiv = styled.div`
@@ -549,19 +575,20 @@ const Component = styled.div`
     border-radius: 10px;
 
     padding: 15px;
-    width: 650px;
+    width: 93vw;
     margin-bottom: 30px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 
-    @media (max-width: 450px) {
-        width: 88.5vw;
+    @media (min-width: 900px) {
+        width: calc(53.5% - 60px);
     }
 
-    @media (max-width: 374px) {
-        width: 87vw;
+    @media (max-width: 450px) {
+        width: 89vw;
     }
+
 `;
 
 const Post = styled.div<{ role: string }>`
@@ -634,6 +661,66 @@ const InputComponent = styled.input`
         font-size: 1rem;
     }
 `;
+
+const ComponentSensor = styled.div`
+    background-color: #f9f9f9;
+    border: #dcdcdc 1.5px solid;
+    border-radius: 10px;
+
+    padding: 20px;
+    margin-bottom: 30px;
+
+    @media (min-width: 900px) {
+        width: calc(53.5% - 60px);
+    }
+
+
+    @media (max-width: 900px) {
+        width: 93vw;
+    }
+
+    @media (max-width: 450px) {
+        width: 89vw;
+    }
+
+
+
+    /* @media (max-width: 768px) {
+         margin: 30px auto;
+         width: 500px;
+     }
+
+     @media (max-width: 550px) {
+         width: 90vw;
+     }*/
+
+
+
+    h2 {
+        color: #0f0e17;
+        font-family: 'FoundersGrotesk-Light', sans-serif;
+    }
+
+    p {
+        color: #2e2f3e;
+        font-family: 'FoundersGrotesk-Regular', sans-serif;
+    }
+`
+
+const Sensors = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /*width: 100%;*/
+    margin: 30px;
+
+    @media (min-width: 900px) {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+`
 
 const Submit = styled.div`
     input {
