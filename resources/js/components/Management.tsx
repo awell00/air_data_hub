@@ -37,6 +37,7 @@ const GasTypeSchema = z.array(z.object({
 
 interface User {
     name: string;
+    cityAgency: string;
 }
 
 interface Report {
@@ -99,7 +100,26 @@ const App: React.FC = () => {
             }
 
             const data = await response.json();
-            setUser(data);
+
+            console.log(data.latAgency, data.longAgency);
+
+            let city = '';
+            try {
+                // @ts-ignore
+                const result = await Radar.reverseGeocode({ latitude: data.latAgency, longitude: data.longAgency });
+                const { addresses } = result;
+                city = addresses[0]?.city || '';
+
+            } catch (err) {
+                // handle error
+            }
+
+            const user = {
+                name: data.name,
+                cityAgency: city,
+            };
+
+            setUser(user);
             setRole(data.role);
         };
 
@@ -219,7 +239,7 @@ const App: React.FC = () => {
 
                 <UserInfo>
                     {user ? (
-                        <p>{t("Welcome")}, {removeAccents(user.name)}!</p>
+                        <><Title>{user.name}</Title><City>{user.cityAgency}</City></>
                     ) : (
                         <p>Loading...</p>
                     )}
@@ -749,3 +769,16 @@ const Submit = styled.div`
         }
     }
 `;
+
+const Title = styled.h1`
+    font-size: 2rem;
+    color: #0f0e17;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+`;
+
+const City = styled.p`
+    font-size: 1.2rem;
+    color: #2e2f3e;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+`;
+
