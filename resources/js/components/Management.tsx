@@ -770,7 +770,7 @@ const Submit = styled.div`
     }
 `;
 
-const Title = styled.h1`
+const Title = styled.p`
     font-size: 2rem;
     color: #0f0e17;
     font-family: 'FoundersGrotesk-Medium', sans-serif;

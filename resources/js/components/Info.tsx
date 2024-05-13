@@ -238,8 +238,9 @@ const App: React.FC = () => {
             setIsVisible(true);
             setTimeout(() => {
                 setIsVisible(false);
+                window.location.reload();
             }, 3000);
-            window.location.reload();
+
 
         }
     }
