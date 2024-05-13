@@ -79,6 +79,7 @@ const App: React.FC = () => {
     const [title, setTitle] = useState("AIR DATA HUB");
     const [role, setRole] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState(false);
+    const [sectors, setSectors] = useState<string[]>([]);
 
     const resetForm = () => {
         setAddress("");
@@ -306,7 +307,8 @@ const App: React.FC = () => {
 
         const data = await response.json();
 
-        for (const item of data) {
+        // Create an array to hold all the promises
+        const promises = data.map(async (item: { latSensor: any; longSensor: any; nameGas: any; idSensor: any; }) => {
             let city = '';
 
             await Radar.reverseGeocode({ latitude: item.latSensor, longitude: item.longSensor })
@@ -324,9 +326,15 @@ const App: React.FC = () => {
                     // handle error
                 });
 
-            // Update the sensors state as soon as a sensor gets its address
-            setSensors(prevSensors => [...prevSensors, { name: item.nameGas, city: city, id: item.idSensor }]);
-        }
+            // Return the new sensor object
+            return { name: item.nameGas, city: city, id: item.idSensor };
+        });
+
+        // Wait for all promises to resolve
+        const newSensors = await Promise.all(promises);
+
+        // Update the sensors state once with the new array
+        setSensors(newSensors);
     };
 
     useEffect(() => {
@@ -365,6 +373,39 @@ const App: React.FC = () => {
         };
 
         fetchGasTypes().catch(error => console.error('Error in fetchGasTypes:', error));
+    }, []);
+
+    //get Sectors and add in sectors useState with request get /api/sectors
+    useEffect(() => {
+        const fetchSectors = async () => {
+            try {
+                const response = await fetch('/api/sectors', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    console.error('Network response was not ok');
+                    return;
+                }
+
+                const data = await response.json();
+
+                const sectors = data.map((item: {nameSector: number}) => item.nameSector);
+
+                setSectors(sectors);
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    console.error('Validation error:', error.errors);
+                } else {
+                    console.error('Error fetching gas types:', error);
+                }
+            }
+        };
+
+        fetchSectors().catch(error => console.error('Error in fetchGasTypes:', error));
     }, []);
 
     //Get the data in agency to add in the select option of the form with request get /api/data-in-agency
@@ -480,9 +521,10 @@ const App: React.FC = () => {
                                     value={sector}
                                     data={[
                                         { text: t('Sectors'), value: '', disabled: true },
-                                        {text: 'Sector 1', value: 1},
-                                        {text: 'Sector 2', value: 2},
-                                        {text: 'Sector 3', value: 3},
+                                        ...sectors.map((gasType, index) => {
+                                            let displayValue = gasType;
+                                            return { text: displayValue, value: index };
+                                        })
                                     ]}
                                     touchUi={false}
                                     inputStyle={"outline selectorData" as any}

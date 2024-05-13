@@ -51,4 +51,12 @@ FROM
         $sensors = DB::select('SELECT COUNT(*) as count FROM Sensors');
         return response()->json($sensors);
     }
+
+
+    public function getSectors(Request $request) {
+        $sectors = DB::select("
+                SELECT * FROM ActivitySectors;
+            ");
+        return response()->json($sectors);
+    }
 }

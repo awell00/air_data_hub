@@ -16,6 +16,7 @@ Route::group(['middleware' => 'App\Http\Middleware\CheckApiToken'], function () 
     Route::get('/gaz', [GazController::class, 'getGazData']);
     Route::get('/numberOfSensors', [GazController::class, 'numberOfSensors']);
     Route::get('/reports-in-sensor/{idSensor}', [UserController::class, 'getReportSensor']);
+    Route::get('/sectors', [GazController::class, 'getSectors']);
 });
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
