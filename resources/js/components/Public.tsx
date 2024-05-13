@@ -152,7 +152,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('/api/gaz', {
+                const response = await fetch(import.meta.env.VITE_APP_URL + '/api/gaz', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
@@ -185,7 +185,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchGasTypes = async () => {
             try {
-                const response = await fetch('/api/gasTypes', {
+                const response = await fetch(import.meta.env.VITE_APP_URL + '/api/gasTypes', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
@@ -234,7 +234,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchUser = async () => {
             const access_token = localStorage.getItem('access_token');
-            const response = await fetch('/api/info', {
+            const response = await fetch(import.meta.env.VITE_APP_URL + '/api/info', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${access_token}`,
@@ -265,7 +265,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchNumberOfSensors = async () => {
             try {
-                const response = await fetch('/api/numberOfSensors', {
+                const response = await fetch(import.meta.env.VITE_APP_URL + '/api/numberOfSensors', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,

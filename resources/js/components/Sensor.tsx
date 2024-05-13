@@ -100,7 +100,7 @@ const App: React.FC = () => {
 
                 const fetchReports = async () => {
                     // @ts-ignore
-                    const response = await fetch(`/api/reports-in-sensor/${sensor.idSensor}`, {
+                    const response = await fetch(import.meta.env.VITE_APP_URL + `/api/reports-in-sensor/${sensor.idSensor}`, {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${import.meta.env.VITE_API_TOKEN}`,
