@@ -232,13 +232,14 @@ const App: React.FC = () => {
                     // handle error
                 });
 
-            window.location.reload();
+
             // Add the new sensor to the sensors state
             setSensors(prevSensors => [{ name: data.newSensor.nameGas, city: city, id: data.newSensor.idSensor }, ...prevSensors]);
             setIsVisible(true);
             setTimeout(() => {
                 setIsVisible(false);
-            }, 5000);
+            }, 3000);
+            window.location.reload();
 
         }
     }
@@ -991,7 +992,7 @@ const UserInfo = styled.div`
     }
 `;
 
-const Title = styled.h1`
+const Title = styled.p`
     font-size: 2rem;
     color: #0f0e17;
     font-family: 'FoundersGrotesk-Medium', sans-serif;
