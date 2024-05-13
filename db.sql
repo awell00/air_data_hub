@@ -222,14 +222,14 @@ VALUES
 -- [ Gases ] --
 INSERT INTO Gases (formulaGas, nameGas, idType)
 VALUES
-    ('CH4', 'Méthane', 1),
-    ('CO2 non bio', 'Dioxyde de carbone non Bio', 1),
-    ('CO2 bio', 'Dioxyde de carbone Bio', 1),
-    ('HFC', 'Hydrofluorocarbures', 1),
-    ('N2O', 'Protoxyde d''azote', 1),
-    ('NH3', 'Ammoniac', 2),
-    ('PFC', 'Perfluorocarbures', 1),
-    ('SF6', 'Hexafluorure de soufre', 1);
+    ('CH4', 'Methane', 1),
+    ('CO2 non bio', 'Non-Bio Carbon Dioxide', 1),
+    ('CO2 bio', 'Bio Carbon Dioxide', 1),
+    ('HFC', 'Hydrofluorocarbons', 1),
+    ('N2O', 'Nitrous Oxide', 1),
+    ('NH3', 'Ammonia', 2),
+    ('PFC', 'Perfluorocarbons', 1),
+    ('SF6', 'Sulfur Hexafluoride', 1);
 
 -- [ ActivitySectors ] --
 INSERT INTO ActivitySectors (nameSector)

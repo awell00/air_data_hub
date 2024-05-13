@@ -8,7 +8,7 @@ import '@mobiscroll/react/dist/css/mobiscroll.min.css';
 import { Select, Input, setOptions, localeFr } from '@mobiscroll/react';
 import { createGlobalStyle } from 'styled-components';
 import { Navigation } from '../utils/Nav';
-
+import {useLanguage} from '../utils/Auth';
 
 setOptions({
     locale: localeFr,
@@ -87,10 +87,7 @@ const App: React.FC = () => {
         setSector("");
     };
 
-    useEffect(() => {
-        const browserLang = navigator.language.split('-')[0];
-        i18n.changeLanguage(browserLang);
-    }, []);
+    useLanguage();
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -522,7 +519,7 @@ const App: React.FC = () => {
                                     data={[
                                         { text: t('Sectors'), value: '', disabled: true },
                                         ...sectors.map((gasType, index) => {
-                                            let displayValue = gasType;
+                                            let displayValue = t(gasType);
                                             return { text: displayValue, value: index };
                                         })
                                     ]}
@@ -675,9 +672,10 @@ const App: React.FC = () => {
                                 value={sector}
                                 data={[
                                     { text: t('Sectors'), value: '', disabled: true },
-                                    {text: 'Sector 1', value: 1},
-                                    {text: 'Sector 2', value: 2},
-                                    {text: 'Sector 3', value: 3},
+                                    ...sectors.map((gasType, index) => {
+                                        let displayValue = t(gasType);
+                                        return { text: displayValue, value: index };
+                                    })
                                 ]}
                                 touchUi={false}
                                 inputStyle={"outline inputComponent3" as any}
@@ -711,7 +709,7 @@ const App: React.FC = () => {
                             <Component>
                                 <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
                                     <TruncatedText>{sensor.city}</TruncatedText>
-                                    <p>{sensor.name}</p>
+                                    <p>{t(sensor.name)}</p>
                                 </a>
                             </Component>
                         ))

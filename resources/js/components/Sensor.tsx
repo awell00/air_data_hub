@@ -9,6 +9,7 @@ import { Select, Input, setOptions, localeFr, Datepicker } from '@mobiscroll/rea
 import { createGlobalStyle } from 'styled-components';
 import { Navigation } from '../utils/Nav';
 import {Chart} from 'chart.js/auto';
+import {useLanguage} from '../utils/Auth';
 
 setOptions({
     locale: localeFr,
@@ -63,9 +64,12 @@ const App: React.FC = () => {
     const [reports, setReports] = useState<ReportItem[]>([])
     const chartRef = useRef<HTMLCanvasElement | null>(null);
     const [personnel, setPersonnel] = useState<Personnel | null>(null);
+    const { t } = useTranslation();
 
     const sensorElement = document.getElementById('sensor');
     let sensor: { nameGas: string; idSensor: number,  firstName: string; lastName: string; longSensor: number; latSensor: number, cityAgency: string, formulaGas: string} | null = null;
+
+    useLanguage();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -153,7 +157,7 @@ const App: React.FC = () => {
                     data: {
                         labels: chartValues.map((item: { dateData: string; }) => item.dateData),
                         datasets: [{
-                            label: 'PPM Value for ' + (sensor ? sensor.nameGas : 'unknown gas'),
+                            label: t('PPM Value for') + ' ' + (sensor ? t(sensor.nameGas) : 'unknown gas'),
                             data: chartValues.map((item: { ppmValue: number; }) => item.ppmValue),
                             borderColor: 'green',
                             fill: false,

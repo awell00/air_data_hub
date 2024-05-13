@@ -250,7 +250,7 @@ const App: React.FC = () => {
                         <InputComponent
                             type="text"
                             name="firstName"
-                            placeholder="First name"
+                            placeholder={t("First Name")}
                    /*         value={}*/
           /*                  onChange={e => setTitleReport(e.target.value)}*/
                         />
@@ -258,13 +258,13 @@ const App: React.FC = () => {
                         <InputComponent
                             type="text"
                             name="lastName"
-                            placeholder="Last name"
+                            placeholder={t("Last Name")}
                             /*         value={}*/
                             /*                  onChange={e => setTitleReport(e.target.value)}*/
                         />
 
                         <Datepicker
-                            placeholder="Select date"
+                            placeholder={t("Date")}
                             touchUi={false}
                             inputStyle={"outline selectorData" as any}
                             cssClass="selectorD"
@@ -272,8 +272,8 @@ const App: React.FC = () => {
 
                         <InputComponent
                             type="text"
-                            name="adress"
-                            placeholder="Adress"
+                            name="address"
+                            placeholder={t("Address")}
                             /*         value={}*/
                             /*                  onChange={e => setTitleReport(e.target.value)}*/
                         />
@@ -331,7 +331,7 @@ const App: React.FC = () => {
                         inputStyle={"outline inputComponent3" as any}
                         touchUi={false}
                         dropdown={false}
-                        placeholder="Select Co-Writers..."
+                        placeholder={t("Select Co-Writers...")}
                         selectMultiple={true}
                         labelStyle="stacked"
                         cssClass="selectorD"
@@ -351,15 +351,15 @@ const App: React.FC = () => {
                                     <p> {person.lastName.toUpperCase()} </p>
                                 </Name>
                                 <div>
-                                    <Post role={person.namePost}> {person.namePost} </Post>
+                                    <Post role={person.namePost}> {t(person.namePost)} </Post>
                                 </div>
                             </Top>
 
 
                             <Info>
-                                <p> Start Date : {person.startDate} </p>
+                                <p> {t("Start Date")} : {person.startDate} </p>
                                 <div>
-                                    <span>Verification Code : </span>
+                                    <span>{t("Verification Code")} : </span>
                                     <span
                                         style={{
                                             color: '#0f0e17',
@@ -389,7 +389,7 @@ const App: React.FC = () => {
                             <ComponentSensor>
                                 <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
                                     <TruncatedText>{sensor.city}</TruncatedText>
-                                    <p>{sensor.name}</p>
+                                    <p>{t(sensor.name)}</p>
                                 </a>
                             </ComponentSensor>
                         ))
