@@ -394,7 +394,7 @@ const App: React.FC = () => {
                         <Input
                             inputStyle={"outline inputComponent1" as any}
                             type="text"
-                            placeholder="First Name"
+                            placeholder={t("First Name")}
                             onChange={(e: {
                                 target: { value: React.SetStateAction<string>; };
                             }) => setFirstName(e.target.value)}
@@ -402,7 +402,7 @@ const App: React.FC = () => {
                         <Input
                             inputStyle={"outline inputComponent2" as any}
                             type="text"
-                            placeholder="Last Name"
+                            placeholder={t("Last Name")}
                             onChange={(e: {
                                 target: { value: React.SetStateAction<string>; };
                             }) => setLastName(e.target.value)}
@@ -668,7 +668,7 @@ const InnerDiv = styled.div`
     align-items: center;
     display: none;
 
-    @media (max-width: 650px) {
+    @media (max-width: 820px) {
         display: flex;
     }
 `;
@@ -753,7 +753,7 @@ const Form = styled.form`
         flex-direction: column;
     }
 
-    @media (max-width: 650px) {
+    @media (max-width: 820px) {
         display: none;
     }
 `
@@ -870,7 +870,7 @@ const Submit = styled.div`
             background-color: #dcdcdc;
         }
 
-        @media (max-width: 650px) {
+        @media (max-width: 820px) {
             width: 25rem;
         }
 
