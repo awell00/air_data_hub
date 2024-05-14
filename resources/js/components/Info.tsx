@@ -478,7 +478,7 @@ const App: React.FC = () => {
 
                 <UserInfo>
                     {user ? (
-                        <><Title>{user.name}</Title><City>{user.cityAgency}</City></>
+                        <><Title>{user.name}</Title><City>{user.cityAgency.toUpperCase()}</City></>
                         ) : (
                         <p>Loading...</p>
                     )}

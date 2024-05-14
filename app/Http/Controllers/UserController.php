@@ -10,7 +10,7 @@ class UserController extends Controller
     public function getInfo(Request $request)
     {
         if ($request->user()) {
-            $fullName = $request->user()->firstName . ' ' . $request->user()->lastName;
+            $fullName = $request->user()->firstName . ' ' . strtoupper($request->user()->lastName);
             $role = $request->user()->role;
             $agency = DB::select('
                 SELECT Agences.longAgence, Agences.latAgence

@@ -42,23 +42,21 @@ class ManagementController extends Controller
                 'firstName' => 'required|string',
                 'lastName' => 'required|string',
                 'birthDate' => 'required|date',
-                'adress' => 'required|string',
+                'address' => 'required|string',
                 'startDate' => 'required|date',
                 'idPost' => 'required|integer',
-                'verificationCode' => 'required|string'
             ]);
-            $firstName = $request->firstName;
-            $lastName = $request->lastName;
+            $firstNameV = $request->firstName;
+            $lastNameV = $request->lastName;
             $startDate = $request->startDate;
             $idPost = $request->idPost;
-            $verificationCode = $request->verificationCode;
-            $adress = $request->adress;
+            $adress = $request->address;
             $birthDate = $request->birthDate;
 
             $result = DB::insert("
                 INSERT INTO Personnel(firstName, lastName, birthDate, adress, startDate, idPost, idAgence, verificationCode)
-                VALUES (:firstName, :lastName, :birthDate , :adress, :startDate, :idPost, :idAgence, :verificationCode )
-                ", ['firstName' => $firstName, 'lastName' => $lastName, 'birthDate' => $birthDate, 'adress' => $adress, 'startDate' => $startDate, 'idPost' => $idPost, 'idAgence' => $idAgence, 'verificationCode' => $verificationCode]);
+                VALUES (:firstName, :lastName, :birthDate , :address, :startDate, :idPost, :idAgence, FLOOR(100000 + RAND() * 900000) )
+                ", ['firstName' => $firstNameV, 'lastName' => $lastNameV, 'birthDate' => $birthDate, 'address' => $adress, 'startDate' => $startDate, 'idPost' => $idPost, 'idAgence' => $idAgence]);
             return response()->json(['message' => 'Personnel added']);
         } else {
             return response()->json(['message' => 'Unauthenticated'], 401);
@@ -78,6 +76,18 @@ class ManagementController extends Controller
                 ORDER BY Sensors.idSensor DESC;
             ", ['lastName' => $lastName, 'firstName' => $firstName]);
             return response()->json($report);
+        } else {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+    }
+
+    public function getPosts(Request $request) {
+        if ($request->user()) {
+            $posts = DB::select("
+                SELECT namePost
+                FROM Posts
+            ");
+            return response()->json($posts);
         } else {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }

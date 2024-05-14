@@ -55,6 +55,10 @@ i18n
                     "technician": "technician",
                     "writer": "writer",
                     "Post": "Post",
+                    "Birth Date": "Birth Date",
+                    "Writer": "Writer",
+                    "Technician": "Technician",
+                    "Manager": "Manager",
                 }
             },
             fr: {
@@ -105,6 +109,10 @@ i18n
                     "technician": "technicien",
                     "writer": "redacteur",
                     "Post": "Poste",
+                    "Birth Date": "Date de naissance",
+                    "Writer": "Redacteur",
+                    "Technician": "Technicien",
+                    "Manager": "Manager",
                 }
             }
         },

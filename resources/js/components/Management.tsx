@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import {removeAccents} from '../utils/Auth';
 import '@mobiscroll/react/dist/css/mobiscroll.min.css';
-import { Select, Input, setOptions, localeFr, Datepicker } from '@mobiscroll/react';
+import { Select, Input, setOptions, localeFr, Datepicker, MbscDatepickerChangeEvent } from '@mobiscroll/react';
 import { createGlobalStyle } from 'styled-components';
 import { Navigation } from '../utils/Nav';
 
@@ -56,7 +56,7 @@ interface Personnel {
     lastName: string;
     startDate: string;
     namePost: string;
-    verificationCode: number;
+    verificationCode: number | string;
 }
 
 // Initialization API
@@ -73,6 +73,11 @@ const App: React.FC = () => {
     const [role, setRole] = useState("");
     const [personnel, setPersonnel] = useState<Personnel[]>([]);
     const access_token = localStorage.getItem('access_token');
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [birthDate, setBirthDate] = useState("");
+    const [idPost, setIdPost] = useState<number>();
+    const [postValues, setPostValues] = useState([]);
 
     const resetForm = () => {
         setAddress("");
@@ -101,8 +106,6 @@ const App: React.FC = () => {
 
             const data = await response.json();
 
-            console.log(data.latAgency, data.longAgency);
-
             let city = '';
             try {
                 // @ts-ignore
@@ -116,7 +119,7 @@ const App: React.FC = () => {
 
             const user = {
                 name: data.name,
-                cityAgency: city,
+                cityAgency: city.toUpperCase(),
             };
 
             setUser(user);
@@ -147,8 +150,15 @@ const App: React.FC = () => {
 
             const data = await response.json();
 
-            const personnelValue = data.map((item: { firstName: string; lastName: string, startDate: string, namePost: string, verificationCode: number}) => ({ firstName: item.firstName, lastName: item.lastName, startDate: item.startDate, namePost: item.namePost, verificationCode: item.verificationCode}));
-            console.log(personnelValue)
+            const personnelValue = data.map((item: { firstName: string; lastName: string, startDate: string, namePost: string, verificationCode: number}) => {
+                return {
+                    firstName: item.firstName,
+                    lastName: item.lastName.toUpperCase(),
+                    startDate: item.startDate,
+                    namePost: item.namePost,
+                    verificationCode: item.verificationCode
+                };
+            });
             setPersonnel(personnelValue);
         };
 
@@ -184,6 +194,30 @@ const App: React.FC = () => {
         fetchUser();
     }, []);
 
+    //get post to /api/post
+    useEffect(() => {
+        const fetchPost = async () => {
+            const response = await fetch('/api/posts', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const postV = data.map((item: {namePost: string}) => {
+                return item.namePost.charAt(0).toUpperCase() + item.namePost.slice(1);
+            });
+            setPostValues(postV);
+        }
+
+        fetchPost();
+    }, []);
+
     const fetchSensors = async () => {
         if (!access_token) {
             window.location.href = '/login';
@@ -202,7 +236,6 @@ const App: React.FC = () => {
         }
 
         const data = await response.json();
-        console.log(data)
         for (const item of data) {
             let city = '';
 
@@ -231,11 +264,58 @@ const App: React.FC = () => {
         fetchSensors();
     }, []);
 
+    let today = new Date();
+    let year = today.getFullYear();
+    let month = today.getMonth() + 1; // getMonth() returns month from 0 to 11
+    let day = today.getDate();
+
+    let formattedMonth = month < 10 ? '0' + month : month.toString();
+    let formattedDay = day < 10 ? '0' + day : day.toString();
+
+    let startDate = `${year}-${formattedMonth}-${formattedDay}`;
+
+    const [dayB, monthB, yearB] = birthDate.split("/");
+    const sqlDate = `${yearB}-${monthB}-${dayB}`;
+
+    const handleSubmit = async (event: { preventDefault: () => void; }) => {
+        event.preventDefault(); // This line prevents the form from being submitted in the default way, which would cause a page reload.
+
+        const response = await fetch('/api/add-personnel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${access_token}`,
+            },
+            body: JSON.stringify({
+                firstName: firstName,
+                lastName: lastName,
+                birthDate: sqlDate,
+                address: address,
+                idPost: idPost,
+                startDate: startDate
+            })
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.message === "Personnel added") {
+            resetForm();
+
+            window.location.reload();
+        }
+
+        console.log(firstName, lastName, sqlDate, address, idPost, startDate);
+    };
+
     return (
         <>
             <GlobalStyles />
             <Container>
-                <Navigation />
+                <Navigation/>
 
                 <UserInfo>
                     {user ? (
@@ -245,53 +325,61 @@ const App: React.FC = () => {
                     )}
                 </UserInfo>
 
-                <Form>
+                <Form onSubmit={handleSubmit}>
                     <Elements>
                         <InputComponent
                             type="text"
                             name="firstName"
                             placeholder={t("First Name")}
-                   /*         value={}*/
-          /*                  onChange={e => setTitleReport(e.target.value)}*/
+                            onChange={e => setFirstName(e.target.value)}
                         />
 
                         <InputComponent
                             type="text"
                             name="lastName"
                             placeholder={t("Last Name")}
-                            /*         value={}*/
-                            /*                  onChange={e => setTitleReport(e.target.value)}*/
+                            onChange={e => setLastName(e.target.value)}
                         />
 
                         <Datepicker
-                            placeholder={t("Date")}
+                            placeholder={t("Birth Date")}
                             touchUi={false}
                             inputStyle={"outline selectorData" as any}
                             cssClass="selectorD"
+                            onChange={(args: MbscDatepickerChangeEvent) => {
+                                if (args.valueText !== undefined) {
+                                    setBirthDate(args.valueText);
+                                }
+                            }}
                         />
 
                         <InputComponent
                             type="text"
                             name="address"
                             placeholder={t("Address")}
-                            /*         value={}*/
-                            /*                  onChange={e => setTitleReport(e.target.value)}*/
+                            onChange={e => setAddress(e.target.value)}
                         />
 
                         <Selects>
                             <Select
-             /*                   data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}*/
+                                data={[
+                                    {text: t('Posts'), value: '', disabled: true},
+                                    ...postValues.map((post, index) => {
+                                        let displayValue = t(post);
+                                        // @ts-ignore
+                                        let isDisabled = post.toLowerCase() === 'manager';
+                                        return {text: displayValue, value: index + 1, disabled: isDisabled};
+                                    })
+                                ]}
                                 inputStyle={"outline selectorData" as any}
                                 touchUi={false}
                                 dropdown={false}
                                 labelStyle="stacked"
                                 placeholder={t("Post")}
-                         /*       onChange={(event) => {
+                                onChange={(event) => {
                                     const selectedValue = event.value;
-                                    const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
-                                    setIndex(selectedIndex);
-                                    setData(selectedValue);
-                                }}*/
+                                    setIdPost(selectedValue);
+                                }}
                                 cssClass="selectorD"
                             />
                         </Selects>
@@ -301,104 +389,126 @@ const App: React.FC = () => {
                     </Submit>
                 </Form>
 
-                <InnerDiv>
-                    <Input
-                        inputStyle={"outline inputComponent1" as any}
-                        type="text"
-                        name="titleReport"
-                        placeholder="First name"
-          /*              onChange={(e: {
-                            target: { value: React.SetStateAction<string>; };
-                        }) => setTitleReport(e.target.value)}
-                        disabled={index === null}*/
-                    />
-                    <Select
-                      /*  data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}*/
-                        inputStyle={"outline inputComponent2" as any}
-                        touchUi={false}
-                        dropdown={false}
-                        placeholder="Select Data..."
-                /*        onChange={(event) => {
-                            const selectedValue = event.value;
-                            const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
-                            setIndex(selectedIndex);
-                            setData(selectedValue);
-                        }}*/
-                        cssClass="selectorD"
-                    />
-                    <Select
-                /*        data={[{ text: t('Co-Writers'), value: '', disabled: true },...admins.map(admin => removeAccents(admin))]}*/
-                        inputStyle={"outline inputComponent3" as any}
-                        touchUi={false}
-                        dropdown={false}
-                        placeholder={t("Select Co-Writers...")}
-                        selectMultiple={true}
-                        labelStyle="stacked"
-                        cssClass="selectorD"
-                      /*  onChange={(event) => setSelectedCoWriters(event.value)}*/
-                    />
-                    <Submit>
-                        <input type="submit" value={t("Add")}/>
-                    </Submit>
-                </InnerDiv>
+                <form onSubmit={handleSubmit}>
+                    <InnerDiv>
+                        <Input
+                            inputStyle={"outline inputComponent1" as any}
+                            type="text"
+                            placeholder="First Name"
+                            onChange={(e: {
+                                target: { value: React.SetStateAction<string>; };
+                            }) => setFirstName(e.target.value)}
+                        />
+                        <Input
+                            inputStyle={"outline inputComponent2" as any}
+                            type="text"
+                            placeholder="Last Name"
+                            onChange={(e: {
+                                target: { value: React.SetStateAction<string>; };
+                            }) => setLastName(e.target.value)}
+                        />
+                        <Input
+                            inputStyle={"outline inputComponent2" as any}
+                            type="text"
+                            placeholder="Address"
+                            onChange={(e: {
+                                target: { value: React.SetStateAction<string>; };
+                            }) => setAddress(e.target.value)}
+                        />
+                        <Datepicker
+                            placeholder={t("Birth Date")}
+                            touchUi={false}
+                            inputStyle={"outline inputComponent2" as any}
+                            cssClass="selectorD"
+                            onChange={(args: MbscDatepickerChangeEvent) => {
+                                if (args.valueText !== undefined) {
+                                    setBirthDate(args.valueText);
+                                }
+                            }}
+                        />
+                        <Select
+                            data={[
+                                {text: t('Posts'), value: '', disabled: true},
+                                ...postValues.map((post, index) => {
+                                    let displayValue = t(post);
+                                    // @ts-ignore
+                                    let isDisabled = post.toLowerCase() === 'manager';
+                                    return {text: displayValue, value: index + 1, disabled: isDisabled};
+                                })
+                            ]}
+                            inputStyle={"outline inputComponent3" as any}
+                            touchUi={false}
+                            dropdown={false}
+                            labelStyle="stacked"
+                            placeholder={t("Post")}
+                            onChange={(event) => {
+                                const selectedValue = event.value;
+                                setIdPost(selectedValue);
+                            }}
+                            cssClass="selectorD"
+                        />
+                        <Submit>
+                            <input type="submit" value={t("Add")}/>
+                        </Submit>
+                    </InnerDiv>
+                </form>
+                    <Personnel>
+                        {personnel.map((person, index) => (
+                            <Component key={index}>
+                                <Top>
+                                    <Name>
+                                        <p> {person.firstName} </p>
+                                        <p> {person.lastName.toUpperCase()} </p>
+                                    </Name>
+                                    <div>
+                                        <Post role={person.namePost}> {t(person.namePost)} </Post>
+                                    </div>
+                                </Top>
 
-                <Personnel>
-                    {personnel.map((person, index) => (
-                        <Component key={index}>
-                            <Top>
-                                <Name>
-                                    <p> {person.firstName} </p>
-                                    <p> {person.lastName.toUpperCase()} </p>
-                                </Name>
-                                <div>
-                                    <Post role={person.namePost}> {t(person.namePost)} </Post>
-                                </div>
-                            </Top>
 
-
-                            <Info>
-                                <p> {t("Start Date")} : {person.startDate} </p>
-                                <div>
-                                    <span>{t("Verification Code")} : </span>
-                                    <span
-                                        style={{
-                                            color: '#0f0e17',
-                                            backgroundColor: '#0f0e17',
-                                            borderRadius: '5px',
-                                            cursor: 'pointer',
-                                            transition: 'background-color 0.15s ease-in-out'
-                                        }}
-                                        onMouseOver={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#f9f9f9'
-                                        }}
-                                        onMouseOut={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#0f0e17'
-                                        }}
-                                    >
+                                <Info>
+                                    <p> {t("Start Date")} : {person.startDate} </p>
+                                    <div>
+                                        <span>{t("Verification Code")} : </span>
+                                        <span
+                                            style={{
+                                                color: '#0f0e17',
+                                                backgroundColor: '#0f0e17',
+                                                borderRadius: '5px',
+                                                cursor: 'pointer',
+                                                transition: 'background-color 0.15s ease-in-out'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#f9f9f9'
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#0f0e17'
+                                            }}
+                                        >
                                     {person.verificationCode}
                                 </span>
-                                </div>
-                            </Info>
-                        </Component>
-                    ))}
-                </Personnel>
+                                    </div>
+                                </Info>
+                            </Component>
+                        ))}
+                    </Personnel>
 
-                <Sensors>
-                    {
-                        sensors.map((sensor, index) => (
-                            <ComponentSensor>
-                                <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
-                                    <TruncatedText>{sensor.city}</TruncatedText>
-                                    <p>{t(sensor.name)}</p>
-                                </a>
-                            </ComponentSensor>
-                        ))
-                    }
-                </Sensors>
+                    <Sensors>
+                        {
+                            sensors.map((sensor, index) => (
+                                <ComponentSensor key={index}>
+                                    <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
+                                        <TruncatedText>{sensor.city}</TruncatedText>
+                                        <p>{t(sensor.name)}</p>
+                                    </a>
+                                </ComponentSensor>
+                            ))
+                        }
+                    </Sensors>
 
             </Container>
         </>
-    );
+);
 }
 
 const renderApp = () => {

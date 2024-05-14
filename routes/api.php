@@ -29,11 +29,15 @@ Route::group(['middleware' => ['auth:api', 'App\Http\Middleware\IsAdmin:admin']]
 
 Route::group(['middleware' => ['auth:api', 'App\Http\Middleware\isManager:manager']], function () {
     Route::get('/personnel', [ManagementController::class, 'getPersonnel']);
-    Route::post('/add-personnel', [ManagementController::class, 'addPersonnel']);
+
     Route::get('/sensors-in-agency', [ManagementController::class, 'getSensorsAgency']);
+    Route::get('/posts', [ManagementController::class, 'getPosts']);
 });
 
+
+
 Route::group(['middleware' => 'auth:api'], function () {
+    Route::post('/add-personnel', [ManagementController::class, 'addPersonnel']);
     Route::get('/info', [UserController::class, 'getInfo']);
     Route::get('/report', [UserController::class, 'getReport']);
     Route::post('/add-sensor', [UserController::class, 'addSensor']);

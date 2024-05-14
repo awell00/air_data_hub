@@ -54,6 +54,7 @@ interface Personnel {
     longSensor: number;
     latSensor: number;
     cityAgency: string;
+    adressSensor: string;
 }
 
 
@@ -77,11 +78,19 @@ const App: React.FC = () => {
                 sensor = JSON.parse(sensorElement.dataset.sensor);
 
                 let city = '';
+                let adressValue = '';
                 try {
                     // @ts-ignore
                     const result = await Radar.reverseGeocode({ latitude: sensor.latSensor, longitude: sensor.longSensor });
                     const { addresses } = result;
                     city = addresses[0]?.city || '';
+                    let formattedAddress = addresses[0]?.formattedAddress || '';
+                    let addressParts = formattedAddress.split(',');
+                    if (addressParts.length >= 2) {
+                        adressValue = addressParts[0].trim();
+                    } else {
+                        adressValue = formattedAddress;
+                    }
                 } catch (err) {
                     // handle error
                 }
@@ -95,7 +104,8 @@ const App: React.FC = () => {
                     lastName: sensor.lastName,
                     longSensor: sensor.longSensor,
                     latSensor: sensor.latSensor,
-                    cityAgency: city,
+                    cityAgency: city.toUpperCase(),
+                    adressSensor: adressValue,
                     formulaGas: sensor.formulaGas,
 
                 };
@@ -159,7 +169,7 @@ const App: React.FC = () => {
                         datasets: [{
                             label: t('PPM Value for') + ' ' + (sensor ? t(sensor.nameGas) : 'unknown gas'),
                             data: chartValues.map((item: { ppmValue: number; }) => item.ppmValue),
-                            borderColor: 'green',
+                            borderColor: 'black',
                             fill: false,
                             tension: 0.1
                         }]
@@ -205,8 +215,8 @@ const App: React.FC = () => {
             <Container>
                 <Navigation/>
                 <UserInfo>
-                    <Title>{personnel?.firstName} {personnel?.lastName}</Title>
-                    <City>{personnel?.cityAgency}</City>
+                    <Title>{personnel?.cityAgency}</Title>
+                    <City>{personnel?.adressSensor}</City>
                 </UserInfo>
 
                 <Div>
