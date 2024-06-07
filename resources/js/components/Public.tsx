@@ -130,9 +130,7 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // This useEffect hook is used to handle window resize events.
-    // It updates the title of the application based on the window width.
-    // It runs once when the component is mounted and cleans up the event listener when the component is unmounted.
+
     useEffect(() => {
         // Define a debounced function that sets the title based on the window width
         const handleResize = debounce(() => {
@@ -425,17 +423,6 @@ const App: React.FC = () => {
                         console.log('Viewport width:', window.innerWidth); // Log the viewport width
                         console.log('mediaQuery.matches:', mediaQuery.matches); // Log the result of mediaQuery.matches
 
-                   /*     if (mediaQuery.matches) {
-                            if (svgElement) {
-                                svgElement.style.marginTop = '3px';
-                                svgElement.style.fill = '#a7a9be';
-                            }
-                        } else {
-                            if (svgElement) {
-                            /!*    svgElement.style.margin = '3px 0 0 4px';*!/
-                                svgElement.style.fill = '#a7a9be';
-                            }
-                        }*/
                     };
 
                     const adjustBorderRadius = () => {
@@ -636,36 +623,6 @@ const App: React.FC = () => {
         };
     }, [styleChanged, styleChangedOnce, zoomValue, coordinatesValue, ppmValue]);
 
-    /*const calculateScale = (zoom: number) => {
-        return 256 * 0.5 / Math.PI * Math.pow(2, zoom);
-    }
-
-    const calculateMetersPerPixel = (latitude: number, scale: number) => {
-        return Math.cos(latitude * Math.PI / 180) / scale;
-    }
-
-    const updateElementStyles = (isVisible: boolean) => {
-        if (titleElement instanceof HTMLElement && buttonElement instanceof HTMLElement) {
-            titleElement.style.color = isVisible ? '#eee' : "#0B0B19FF";
-            buttonElement.style.visibility = isVisible ? "visible" : "hidden";
-            buttonElement.style.opacity = isVisible ? "1" : "0";
-        }
-    }
-
-    map.current?.on('move', () => {
-        const latitude = map.current?.getCenter().lat;
-        const zoom = map.current?.getZoom();
-
-        if (latitude && zoom) {
-            const scale = calculateScale(zoom);
-            const metersPerPixel = calculateMetersPerPixel(latitude, scale);
-            if (metersPerPixel) {
-                const isVisible = metersPerPixel > zoomMin;
-                updateElementStyles(isVisible);
-            }
-        }
-    });*/
-
     return (
         <>
             <GlobalStyle />
@@ -701,37 +658,7 @@ const App: React.FC = () => {
                                 placeholder="Gas"
                             />
                         </div>
-
-                       {/* <GasSelector
-                            ref={selectRef}
-                            onChange={e => handleGasChange(e.target.value)}
-                            id="selector"
-                        >
-                            <option value="" disabled selected>
-                                {t('Gases')}
-                            </option>
-
-                            {gasTypes.map(gasType => {
-                                let displayValue = gasType;
-
-                                if (gasType === "CO2 non bio") {
-                                    displayValue = "CO2nb";
-                                } else if (gasType === "CO2 bio") {
-                                    displayValue = "CO2b";
-                                }
-
-                                return (
-                                    <option key={gasType} value={displayValue}>
-                                        {displayValue}
-                                    </option>
-                                )
-                            })}
-                        </GasSelector>*/}
                     </Search>
-
-                    {/*<Count>
-                    {numberSensors + ' ' + t('Sensors')}
-                </Count>*/}
 
                     <a href={import.meta.env.VITE_APP_URL + redirection} className="button-div">
                         <LoginButton className="button">
@@ -783,12 +710,10 @@ const GlobalStyle = createGlobalStyle`
         font-family: 'FoundersGrotesk-Medium', sans-serif !important;
         color: #0f0e17 !important;
         background-color: #fffffe !important;
-        /*box-shadow: 0 0 7px rgba(11, 11, 25, 0.15) !important;*/
         -webkit-appearance: none !important;
         -moz-appearance: none !important;
 
         @media (max-width: 768px) {
-/*            margin-left: 10px !important;*/
             pointer-events: all !important;
         }
 
@@ -929,10 +854,3 @@ const Title = styled.h1`
 const Translate = styled.h2`
     font-family: "ArchivoBlack-Regular", sans-serif;
 `
-
-//TODO: Change Color
-//TODO: Clean Code
-//TODO: Comment Code
-//TODO: Add Tests
-//TODO: Add Images Sources
-//FIX: The geocoder not display

@@ -1,24 +1,30 @@
 <?php
 
+// Namespace declaration
 namespace App\Http\Controllers;
 
+// Importing necessary classes
 use Illuminate\Http\Request;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
+// AuthController class extending the base Controller class
 class AuthController extends Controller
 {
+    // Method to log in a user
     public function login(Request $request)
     {
+        // Validate the incoming request
         $request->validate([
             'email' => 'email|required',
             'password' => 'required'
         ]);
 
+        // Find the user with the given email
         $user = User::where('email', $request->email)->first();
 
+        // If the user does not exist, return an error response
         if (!$user) {
             return response()->json([
                 'message' => 'The given data was invalid.',
@@ -30,6 +36,7 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // If the provided password does not match the user's password, return an error response
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'message' => 'The given data was invalid.',
@@ -41,8 +48,10 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Create an auth token for the user
         $authToken = $user->createToken('auth-token')->accessToken;
 
+        // Return a response with the auth token, the user's role, and a redirect URL
         return response()->json([
             'access_token' => $authToken,
             'role' => $user->role,
@@ -50,9 +59,11 @@ class AuthController extends Controller
         ]);
     }
 
+    // Method to sign up a user
     public function signup(Request $request)
     {
         try {
+            // Validate the incoming request
             $request->validate([
                 'firstName' => 'required',
                 'lastName' => 'required',
@@ -62,20 +73,7 @@ class AuthController extends Controller
                 'verificationCode' => 'required|integer'
             ]);
 
-            // Check if a user with the same first name and last name already exists
-            /*$existingUser = User::where('firstName', $request->firstName)
-                ->where('lastName', $request->lastName)
-                ->first();
-
-            if ($existingUser) {
-                return response()->json([
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'user' => 'User already exists'
-                    ],
-                ], 422);
-            }*/
-
+            // If the role is 'admin', check the email and verification code
             if ($request->role == 'admin') {
                 $allowedAdminEmail = config('admin.email');
                 $allowedAdminVerification = config('admin.verification');
@@ -87,7 +85,9 @@ class AuthController extends Controller
                 if ($request->verificationCode != $allowedAdminVerification) {
                     return response()->json(['message' => 'Invalid verification code for admin'], 403);
                 }
-            } else if ($request->role == 'personnel') {
+            }
+            // If the role is 'personnel', check the verification code and personnel details
+            else if ($request->role == 'personnel') {
                 if ($request->verificationCode <= 0 || !(DB::select('select * from Personnel where firstName = ? AND lastName= ?', [$request->firstName, $request->lastName]))) {
                     return response()->json([
                         'message' => 'The given data was invalid.',
@@ -110,6 +110,7 @@ class AuthController extends Controller
                 $role = DB::select('select namePost from Posts where idPost = ?', [$personnel[0]->idPost]);
             }
 
+            // Create the user
             $user = User::create([
                 'firstName' => $request->firstName,
                 'lastName' => $request->lastName,
@@ -120,8 +121,10 @@ class AuthController extends Controller
                 'personnel_id' => $request->role != 'admin' ? $personnel[0]->idPersonnel : null,
             ]);
 
+            // Return a response with a success message and the created user
             return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
         } catch (\Exception $e) {
+            // If there was an error, return a response with an error message
             return response()->json(['message' => 'Failed to create user', 'error' => $e->getMessage()], 500);
         }
     }

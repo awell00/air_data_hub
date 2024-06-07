@@ -1,12 +1,15 @@
-import React, {FC, createRef, useState, useEffect } from 'react';
+// Importing necessary hooks and types from 'react'
+import React, { FC, useState, useEffect } from 'react';
+
+// Importing 'styled-components' for component styling
 import styled from 'styled-components';
 
+// Types and interfaces
 interface VerificationCodeInputProps {
     onCodeChange: (code: number) => void;
     isVerificationCodeValid: boolean;
     setVerificationCodeValid: (isValid: boolean) => void;
 }
-
 
 const VerificationCodeInput: FC<VerificationCodeInputProps> = ({ onCodeChange, isVerificationCodeValid, setVerificationCodeValid }) => {
     const [code, setCode] = useState(Array(6).fill('')); // Initialize state with an array of 6 empty strings
@@ -30,7 +33,6 @@ const VerificationCodeInput: FC<VerificationCodeInputProps> = ({ onCodeChange, i
     };
 
     const handleChange = (value: string, i: number) => {
-        // Ignore non-digit inputs and allow empty strings for deletion
         if (value !== '' && !/^\d+$/.test(value)) {
             return;
         }
@@ -74,35 +76,35 @@ const VerificationCodeInput: FC<VerificationCodeInputProps> = ({ onCodeChange, i
 
 export default VerificationCodeInput;
 
-
+// Define a styled div component for the container
 const Div = styled.div`
-    display: flex;
-    justify-content: center;
-    margin: 10px 30px;
+    display: flex; // Use flex layout
+    justify-content: center; // Center the content horizontally
+    margin: 10px 30px; // Apply margin
 
-    @media (max-width: 450px) {
-        margin: 3vw;
+    @media (max-width: 450px) { // Responsive design for screens smaller than 450px
+        margin: 3vw; // Adjust margin
     }
 `;
 
+// Define a styled input component
 const Input = styled.input`
-    width: 3rem;
-    height: 4.3rem;
-    font-size: 1.5rem;
-    text-align: center;
-    padding: 1rem;
-    margin: 0 0.7rem;
-    border: 1.5px solid #dcdcdc;
-    border-radius: 7px;
-    font-family: 'FoundersGrotesk-Regular', sans-serif;
+    width: 3rem; // Set width
+    height: 4.3rem; // Set height
+    font-size: 1.5rem; // Set font size
+    text-align: center; // Center the text
+    padding: 1rem; // Apply padding
+    margin: 0 0.7rem; // Apply margin
+    border: 1.5px solid #dcdcdc; // Set border
+    border-radius: 7px; // Set border radius
+    font-family: 'FoundersGrotesk-Regular', sans-serif; // Set font family
 
-    @media (max-width: 450px) {
-        width: 10vw;
-        height: 15vw;
-        font-size: 5vw;
-        padding: 1vw;
-        margin: 0 2.8vw;
-
+    @media (max-width: 450px) { // Responsive design for screens smaller than 450px
+        width: 10vw; // Adjust width
+        height: 15vw; // Adjust height
+        font-size: 5vw; // Adjust font size
+        padding: 1vw; // Adjust padding
+        margin: 0 2.8vw; // Adjust margin
     }
 `;
 

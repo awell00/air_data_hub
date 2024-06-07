@@ -1,57 +1,43 @@
+// Third-party libraries
 import React, { useState, useEffect } from 'react';
 import ReactDOM from "react-dom/client";
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../../i18n';
-import {removeAccents} from '../utils/Auth';
-import '@mobiscroll/react/dist/css/mobiscroll.min.css';
 import { Select, Input, setOptions, localeFr, Datepicker, MbscDatepickerChangeEvent } from '@mobiscroll/react';
-import { createGlobalStyle } from 'styled-components';
+
+// CSS imports
+import '@mobiscroll/react/dist/css/mobiscroll.min.css';
+
+// Local modules
 import { Navigation } from '../utils/Nav';
-
-setOptions({
-    locale: localeFr,
-    theme: 'ios',
-    themeVariant: 'light'
-});
-
-
 
 // Libraries for mapping
 import Radar from 'radar-sdk-js';
 
+// Zod for validation
 import { z } from 'zod';
-type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
 
-const GasDataSchema = z.array(z.object({
-    formulaGas: z.string(),
-    latSensor: z.number(),
-    longSensor: z.number(),
-    ppmValue: z.number(),
-    max_ppmValue: z.number(),
-}));
+// types.ts
+export type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
 
-const GasTypeSchema = z.array(z.object({
-    formulaGas: z.string(),
-}));
-
-interface User {
+// interfaces.ts
+export interface User {
     name: string;
     cityAgency: string;
 }
 
-interface Report {
+export interface Report {
     title: string;
     date: string;
 }
 
-interface Sensor {
+export interface Sensor {
     id: any;
     name: string;
     city: string;
 }
 
-interface Personnel {
+export interface Personnel {
     firstName: string;
     lastName: string;
     startDate: string;
@@ -59,25 +45,53 @@ interface Personnel {
     verificationCode: number | string;
 }
 
+setOptions({
+    locale: localeFr,
+    theme: 'ios',
+    themeVariant: 'light'
+});
+
 // Initialization API
 Radar.initialize(import.meta.env.VITE_RADAR);
 
 const App: React.FC = () => {
+    // User related state variables
     const [user, setUser] = useState<User | null>(null);
+    const [role, setRole] = useState("");
+    const access_token = localStorage.getItem('access_token');
+
+    // Report and sensor state variables
     const [reports, setReports] = useState<Report[]>([]);
     const [sensors, setSensors] = useState<Sensor[]>([]);
-    const { t } = useTranslation();
+
+    // Personnel state variables
+    const [personnel, setPersonnel] = useState<Personnel[]>([]);
+
+    // Form input state variables
     const [address, setAddress] = useState("");
     const [formulaGas, setFormulaGas] = useState("");
     const [sector, setSector] = useState("");
-    const [role, setRole] = useState("");
-    const [personnel, setPersonnel] = useState<Personnel[]>([]);
-    const access_token = localStorage.getItem('access_token');
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [birthDate, setBirthDate] = useState("");
     const [idPost, setIdPost] = useState<number>();
     const [postValues, setPostValues] = useState([]);
+
+    // Translation hook
+    const { t } = useTranslation();
+
+    let today = new Date();
+    let year = today.getFullYear();
+    let month = today.getMonth() + 1; // getMonth() returns month from 0 to 11
+    let day = today.getDate();
+
+    let formattedMonth = month < 10 ? '0' + month : month.toString();
+    let formattedDay = day < 10 ? '0' + day : day.toString();
+
+    let startDate = `${year}-${formattedMonth}-${formattedDay}`;
+
+    const [dayB, monthB, yearB] = birthDate.split("/");
+    const sqlDate = `${yearB}-${monthB}-${dayB}`;
 
     const resetForm = () => {
         setAddress("");
@@ -87,7 +101,10 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const fetchUser = async () => {
+            // Retrieve access token from local storage
             const access_token = localStorage.getItem('access_token');
+
+            // If no access token, redirect to login page
             if (!access_token) {
                 window.location.href = '/login';
                 return;
@@ -100,38 +117,46 @@ const App: React.FC = () => {
                 },
             });
 
+            // If response is not ok, throw an error
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
+            // Parse the response data
             const data = await response.json();
 
             let city = '';
+
             try {
-                // @ts-ignore
+                // Reverse geocode the latitude and longitude to get city
                 const result = await Radar.reverseGeocode({ latitude: data.latAgency, longitude: data.longAgency });
                 const { addresses } = result;
                 city = addresses[0]?.city || '';
-
             } catch (err) {
-                // handle error
+                console.error(err);
             }
 
+            // Create user object
             const user = {
                 name: data.name,
                 cityAgency: city.toUpperCase(),
             };
 
+            // Set user and role state
             setUser(user);
             setRole(data.role);
         };
 
+        // Call fetchUser function
         fetchUser();
     }, []);
 
     useEffect(() => {
         const fetchUser = async () => {
+            // Retrieve access token from local storage
             const access_token = localStorage.getItem('access_token');
+
+            // If no access token, redirect to login page
             if (!access_token) {
                 window.location.href = '/login';
                 return;
@@ -159,16 +184,21 @@ const App: React.FC = () => {
                     verificationCode: item.verificationCode
                 };
             });
+
+            // Set personnel state
             setPersonnel(personnelValue);
         };
 
         fetchUser();
     }, []);
 
-
+    // Fetching reports data
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchReports = async () => {
+            // Retrieve access token from local storage
             const access_token = localStorage.getItem('access_token');
+
+            // If no access token, redirect to login page
             if (!access_token) {
                 window.location.href = '/login';
                 return;
@@ -181,22 +211,30 @@ const App: React.FC = () => {
                 },
             });
 
+            // If response is not ok, throw an error
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
 
+            // Map the data to create reports objects
             const reportsValue = data.map((item: { titleReport: string; dateReport: string }) => ({ title: item.titleReport, date: item.dateReport }));
+
+            // Set reports state
             setReports(reportsValue);
         };
 
-        fetchUser();
+        // Call fetchReports function
+        fetchReports();
     }, []);
 
-    //get post to /api/post
+    // Fetching posts data
     useEffect(() => {
-        const fetchPost = async () => {
+        const fetchPosts = async () => {
+            // Retrieve access token from local storage
+            const access_token = localStorage.getItem('access_token');
+
             const response = await fetch('/api/posts', {
                 method: 'GET',
                 headers: {
@@ -209,16 +247,26 @@ const App: React.FC = () => {
             }
 
             const data = await response.json();
+
+            // Map the data to create posts objects
             const postV = data.map((item: {namePost: string}) => {
                 return item.namePost.charAt(0).toUpperCase() + item.namePost.slice(1);
             });
+
+            // Set postValues state
             setPostValues(postV);
         }
 
-        fetchPost();
+        // Call fetchPosts function
+        fetchPosts();
     }, []);
 
+   // Function to fetch sensor data
     const fetchSensors = async () => {
+        // Retrieve access token from local storage
+        const access_token = localStorage.getItem('access_token');
+
+        // If no access token, redirect to login page
         if (!access_token) {
             window.location.href = '/login';
             return;
@@ -231,29 +279,33 @@ const App: React.FC = () => {
             },
         });
 
+        // If response is not ok, throw an error
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Parse the response data
         const data = await response.json();
+
+        // Iterate over each sensor data
         for (const item of data) {
             let city = '';
 
-            await Radar.reverseGeocode({ latitude: item.latSensor, longitude: item.longSensor })
-                .then((result) => {
-                    const { addresses } = result;
-                    let formattedAddress = addresses[0]?.formattedAddress || '';
-                    let addressParts = formattedAddress.split(',');
-                    if (addressParts.length >= 2) {
-                        city = addressParts[0].trim() + ' | ' + addressParts[1].trim();
-                    } else {
-                        city = formattedAddress;
-                    }
-                })
-                .catch((err) => {
-                    // handle error
-                });
-
+            try {
+                // Reverse geocode the latitude and longitude to get city
+                const result = await Radar.reverseGeocode({ latitude: item.latSensor, longitude: item.longSensor });
+                const { addresses } = result;
+                let formattedAddress = addresses[0]?.formattedAddress || '';
+                let addressParts = formattedAddress.split(',');
+                if (addressParts.length >= 2) {
+                    city = addressParts[0].trim() + ' | ' + addressParts[1].trim();
+                } else {
+                    city = formattedAddress;
+                }
+            } catch (err) {
+                // Handle any errors
+                console.error(err);
+            }
 
             // Update the sensors state as soon as a sensor gets its address
             setSensors(prevSensors => [...prevSensors, { name: item.nameGas, city: city, id : item.idSensor }]);
@@ -264,22 +316,12 @@ const App: React.FC = () => {
         fetchSensors();
     }, []);
 
-    let today = new Date();
-    let year = today.getFullYear();
-    let month = today.getMonth() + 1; // getMonth() returns month from 0 to 11
-    let day = today.getDate();
-
-    let formattedMonth = month < 10 ? '0' + month : month.toString();
-    let formattedDay = day < 10 ? '0' + day : day.toString();
-
-    let startDate = `${year}-${formattedMonth}-${formattedDay}`;
-
-    const [dayB, monthB, yearB] = birthDate.split("/");
-    const sqlDate = `${yearB}-${monthB}-${dayB}`;
-
+    // Function to handle form submission
     const handleSubmit = async (event: { preventDefault: () => void; }) => {
-        event.preventDefault(); // This line prevents the form from being submitted in the default way, which would cause a page reload.
+        // Prevent the form from being submitted in the default way, which would cause a page reload
+        event.preventDefault();
 
+        // Make a POST request to the '/api/add-personnel' endpoint
         const response = await fetch('/api/add-personnel', {
             method: 'POST',
             headers: {
@@ -294,21 +336,22 @@ const App: React.FC = () => {
                 idPost: idPost,
                 startDate: startDate
             })
-        })
+        });
 
+        // If the response is not ok, throw an error
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Parse the response data
         const data = await response.json();
 
+        // If the personnel was added successfully, reset the form and reload the page
         if (data.message === "Personnel added") {
             resetForm();
-
             window.location.reload();
         }
 
-        console.log(firstName, lastName, sqlDate, address, idPost, startDate);
     };
 
     return (

@@ -1,29 +1,30 @@
-import React, { useState, useEffect, useRef} from 'react';
+// React related imports
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from "react-dom/client";
-import styled from 'styled-components';
+
+// Third-party libraries
+import styled, { createGlobalStyle } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../../i18n';
-import {removeAccents} from '../utils/Auth';
-import '@mobiscroll/react/dist/css/mobiscroll.min.css';
-import { Select, Input, setOptions, localeFr, Datepicker } from '@mobiscroll/react';
-import { createGlobalStyle } from 'styled-components';
+import { Chart } from 'chart.js/auto';
+import { setOptions, localeFr } from '@mobiscroll/react';
+
+// Utility functions
+import { removeAccents, useLanguage } from '../utils/Auth';
+
+// Components
 import { Navigation } from '../utils/Nav';
-import {Chart} from 'chart.js/auto';
-import {useLanguage} from '../utils/Auth';
 
-setOptions({
-    locale: localeFr,
-    theme: 'ios',
-    themeVariant: 'light'
-});
-
-
+// CSS
+import '@mobiscroll/react/dist/css/mobiscroll.min.css';
 
 // Libraries for mapping
 import Radar from 'radar-sdk-js';
 
-import { z } from 'zod';
+// Type aliases
 type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
+
+// Zod schemas
+import { z } from 'zod';
 
 const GasDataSchema = z.array(z.object({
     formulaGas: z.string(),
@@ -37,10 +38,10 @@ const GasTypeSchema = z.array(z.object({
     formulaGas: z.string(),
 }));
 
+// Interfaces
 interface ChartDataItem {
     ppmValue: number;
     dateData: string;
-
 }
 
 interface ReportItem {
@@ -57,48 +58,70 @@ interface Personnel {
     adressSensor: string;
 }
 
+setOptions({
+    locale: localeFr,
+    theme: 'ios',
+    themeVariant: 'light'
+});
 
 // Initialization API
 Radar.initialize(import.meta.env.VITE_RADAR);
 
 const App: React.FC = () => {
-    const [reports, setReports] = useState<ReportItem[]>([])
-    const chartRef = useRef<HTMLCanvasElement | null>(null);
-    const [personnel, setPersonnel] = useState<Personnel | null>(null);
+    // React hooks
     const { t } = useTranslation();
+    const [reports, setReports] = useState<ReportItem[]>([]);
+    const [personnel, setPersonnel] = useState<Personnel | null>(null);
+    const chartRef = useRef<HTMLCanvasElement | null>(null);
 
+    // DOM element retrieval
     const sensorElement = document.getElementById('sensor');
+
+    // Variable declaration
     let sensor: { nameGas: string; idSensor: number,  firstName: string; lastName: string; longSensor: number; latSensor: number, cityAgency: string, formulaGas: string} | null = null;
+    const chartInstance = useRef<Chart | null>(null);
 
     useLanguage();
 
     useEffect(() => {
         const fetchData = async () => {
             if (sensorElement && sensorElement.dataset.sensor) {
+                // Parse the sensor data from the sensorElement dataset
                 sensor = JSON.parse(sensorElement.dataset.sensor);
 
                 let city = '';
                 let adressValue = '';
+
                 try {
+                    // Use Radar's reverseGeocode function to get the address from the sensor's latitude and longitude
                     // @ts-ignore
                     const result = await Radar.reverseGeocode({ latitude: sensor.latSensor, longitude: sensor.longSensor });
                     const { addresses } = result;
+
                     city = addresses[0]?.city || '';
+
+                    // Get the formatted address from the address
                     let formattedAddress = addresses[0]?.formattedAddress || '';
+
+                    // Split the formatted address into parts
                     let addressParts = formattedAddress.split(',');
+
+                    // If there are at least two parts, use the first part as the address value
+                    // Otherwise, use the whole formatted address as the address value
                     if (addressParts.length >= 2) {
                         adressValue = addressParts[0].trim();
                     } else {
                         adressValue = formattedAddress;
                     }
                 } catch (err) {
-                    // handle error
+                    console.error('Error getting address:', err);
                 }
 
                 if (!sensor) {
                     throw new Error('Sensor data is missing');
                 }
 
+                // Create an object with the sensor values
                 const sensorValues = {
                     firstName: sensor.firstName,
                     lastName: sensor.lastName,
@@ -107,12 +130,13 @@ const App: React.FC = () => {
                     cityAgency: city.toUpperCase(),
                     adressSensor: adressValue,
                     formulaGas: sensor.formulaGas,
-
                 };
 
                 setPersonnel(sensorValues);
 
+                // Define an asynchronous function to fetch reports
                 const fetchReports = async () => {
+                    // Send a GET request to the reports API endpoint
                     // @ts-ignore
                     const response = await fetch(import.meta.env.VITE_APP_URL + `/api/reports-in-sensor/${sensor.idSensor}`, {
                         method: 'GET',
@@ -121,11 +145,15 @@ const App: React.FC = () => {
                         },
                     });
 
+                    // If the response is not ok, throw an error
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
+                    // Parse the response data as JSON
                     const data = await response.json();
+
+                    // Map the data to an array of report values
                     const reportsValue = data.map((item: { titleReport: string; dateReport: string }) => {
                         return {
                             titleReport: item.titleReport,
@@ -133,11 +161,12 @@ const App: React.FC = () => {
                         };
                     }, []);
 
+                    // Update the reports state with the report values
                     setReports(reportsValue);
-
                 };
 
-                await fetchReports()
+                // Call the fetchReports function
+                await fetchReports();
             }
         };
 
@@ -146,12 +175,16 @@ const App: React.FC = () => {
 
 
     useEffect(() => {
+        // Check if sensorElement exists and if it has dataset values
         if (sensorElement && sensorElement.dataset.values) {
+            // Parse the values from the sensorElement dataset
             const values = JSON.parse(sensorElement.dataset.values);
+
+            // Map the values to an array of chart values, formatting the date data
             const chartValues = values.map((item: { ppmValue: number; dateData: string}) => {
                 const date = new Date(item.dateData);
 
-                // Get the month and year
+                // Get the month and year from the date
                 const month = date.getMonth() + 1; // getMonth returns a zero-based month, so add 1
                 const year = date.getFullYear();
 
@@ -161,7 +194,9 @@ const App: React.FC = () => {
                 return {ppmValue: item.ppmValue, dateData: formattedDate};
             });
 
+            // Check if chartRef.current exists
             if (chartRef.current) {
+                // Create a new Chart instance with the chart values
                 chartInstance.current = new Chart(chartRef.current, {
                     type: 'line',
                     data: {
@@ -193,6 +228,7 @@ const App: React.FC = () => {
                 });
             }
 
+            // Return a cleanup function that destroys the Chart instance
             return () => {
                 if (chartInstance.current) {
                     chartInstance.current.destroy();
@@ -201,13 +237,6 @@ const App: React.FC = () => {
             };
         }
     }, [sensorElement]);
-
-
-    const chartInstance = useRef<Chart | null>(null);
-
-    useEffect(() => {
-        console.log("report" + reports)
-    }, []);
 
     return (
         <>
@@ -220,13 +249,10 @@ const App: React.FC = () => {
                 </UserInfo>
 
                 <Div>
-
                     <ChartDiv>
                         <Canvas ref={chartRef}/>
                     </ChartDiv>
-
                 </Div>
-
 
                 <Reports>
                 {
@@ -236,7 +262,7 @@ const App: React.FC = () => {
                                 <p>{removeAccents(report.dateReport)}</p>
                             </Component>
                         ))
-                    }
+                }
                 </Reports>
 
             </Container>
@@ -258,10 +284,10 @@ const renderApp = () => {
 
 document.addEventListener('DOMContentLoaded', renderApp);
 
-const GlobalStyles = createGlobalStyle`
+// Global styles
+const GlobalStyles = createGlobalStyle``
 
-`
-
+// Layout components
 const Container = styled.div`
     height: 100%;
     background-color: #fffffe;
@@ -269,97 +295,6 @@ const Container = styled.div`
     justify-content: center;
     flex-direction: column;
 `
-
-const Reports = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    /*width: 100%;*/
-    margin: 30px;
-    margin-top: 60px;
-
-    @media (min-width: 900px) {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-between;
-    }
-`
-
-const Component = styled.div`
-    background-color: #f9f9f9;
-    border: #dcdcdc 1.5px solid;
-    border-radius: 10px;
-
-    padding: 20px;
-    margin-bottom: 30px;
-
-    @media (min-width: 900px) {
-        width: calc(53.5% - 60px);
-    }
-
-
-    @media (max-width: 900px) {
-        width: 93vw;
-    }
-
-    @media (max-width: 768px) {
-        width: 88vw;
-    }
-
-   /* @media (max-width: 768px) {
-        margin: 30px auto;
-        width: 500px;
-    }
-
-    @media (max-width: 550px) {
-        width: 90vw;
-    }*/
-
-
-
-    h2 {
-        color: #0f0e17;
-        font-family: 'FoundersGrotesk-Light', sans-serif;
-    }
-
-    p {
-        color: #2e2f3e;
-        font-family: 'FoundersGrotesk-Regular', sans-serif;
-    }
-`
-
-const TruncatedText = styled.h2`
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 800px;
-
-    @media (min-width: 1100px) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 600px;
-    }
-`;
-const Canvas = styled.canvas`
-    background-color: #f9f9f9;
-    border: #dcdcdc 1.5px solid;
-    border-radius: 7px;
-    padding: 10px;
-
-`;
-
-const ChartDiv = styled.div`
-    width: 50%;
-    height: 50%;
-    margin: 0 auto;
-    margin-top:  30px;
-
-    @media (max-width: 1024px){
-        width: 95%;
-    }
-`;
-
 const Div = styled.div`
     display: flex;
     flex-direction: row;
@@ -377,24 +312,52 @@ const Div = styled.div`
     padding-right: 10px;
 `;
 
-const Personnel = styled.div`
+// Report components
+const Reports = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 30px;
+    margin-top: 60px;
 
-`;
+    @media (min-width: 900px) {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+`
+const Component = styled.div`
+    background-color: #f9f9f9;
+    border: #dcdcdc 1.5px solid;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
 
-const Title = styled.p`
-    font-size: 1.9rem;
-    color: #0f0e17;
-    font-family: 'FoundersGrotesk-Medium', sans-serif;
+    @media (min-width: 900px) {
+        width: calc(53.5% - 60px);
+    }
 
+    @media (max-width: 900px) {
+        width: 93vw;
+    }
 
-`;
+    @media (max-width: 768px) {
+        width: 88vw;
+    }
 
-const City = styled.p`
-    font-size: 1.1rem;
-    color: #2e2f3e;
-    font-family: 'FoundersGrotesk-Regular', sans-serif;
-`;
+    h2 {
+        color: #0f0e17;
+        font-family: 'FoundersGrotesk-Light', sans-serif;
+    }
 
+    p {
+        color: #2e2f3e;
+        font-family: 'FoundersGrotesk-Regular', sans-serif;
+    }
+`
+
+// User info components
 const UserInfo = styled.div`
     margin: 110px 30px 0;
     font-family: 'FoundersGrotesk-Regular', sans-serif;
@@ -403,3 +366,44 @@ const UserInfo = styled.div`
         margin: 110px 20px 0;
     }
 `;
+const Title = styled.p`
+    font-size: 1.9rem;
+    color: #0f0e17;
+    font-family: 'FoundersGrotesk-Medium', sans-serif;
+`;
+const City = styled.p`
+    font-size: 1.1rem;
+    color: #2e2f3e;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+`;
+
+// Other components
+const TruncatedText = styled.h2`
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 800px;
+
+    @media (min-width: 1100px) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 600px;
+    }
+`;
+const Canvas = styled.canvas`
+    background-color: #f9f9f9;
+    border: #dcdcdc 1.5px solid;
+    border-radius: 7px;
+    padding: 10px;
+`;
+const ChartDiv = styled.div`
+    width: 50%;
+    height: 50%;
+    margin: 0 auto;
+    margin-top:  30px;
+
+    @media (max-width: 1024px){
+        width: 95%;
+    }
+`;
+const Personnel = styled.div``;

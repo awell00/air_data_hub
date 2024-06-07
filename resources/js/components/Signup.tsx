@@ -131,12 +131,6 @@ const App: React.FC = () => {
 
             const data = await response.json();
 
-            // if error is 422, then the user already exists
-            /*if (response.status === 422) {
-                setFirstNameValid(false);
-                setLastNameValid(false);
-            }*/
-
             // If the request is successful, redirect the user to the login page
             if (response.ok) {
                 setFirstNameValid(true);

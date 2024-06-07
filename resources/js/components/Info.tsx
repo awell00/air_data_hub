@@ -1,30 +1,35 @@
+// React imports
 import React, { useState, useEffect } from 'react';
 import ReactDOM from "react-dom/client";
+
+// Styling imports
 import styled from 'styled-components';
-import { useTranslation } from 'react-i18next';
-import i18n from '../../../i18n';
-import {removeAccents} from '../utils/Auth';
-import '@mobiscroll/react/dist/css/mobiscroll.min.css';
-import { Select, Input, setOptions, localeFr } from '@mobiscroll/react';
 import { createGlobalStyle } from 'styled-components';
-import { Navigation } from '../utils/Nav';
+import '@mobiscroll/react/dist/css/mobiscroll.min.css';
+
+// Translation imports
+import { useTranslation } from 'react-i18next';
+
+// Mobiscroll imports
+import { Select, Input, setOptions, localeFr } from '@mobiscroll/react';
+
+// Utility imports
+import {removeAccents} from '../utils/Auth';
 import {useLanguage} from '../utils/Auth';
 
-setOptions({
-    locale: localeFr,
-    theme: 'ios',
-    themeVariant: 'light'
-});
-
-
+// Component imports
+import { Navigation } from '../utils/Nav';
 
 // Libraries for mapping
 import Radar from 'radar-sdk-js';
 
+// Zod schemas
 import { z } from 'zod';
-import { Link } from 'react-router-dom';
+
+// Type Definitions
 type GasType = 'NH3' | 'CO2b' | 'PFC' | 'CO2nb' | 'CH4' | 'HFC' | 'N2O' | 'SF6';
 
+// Zod Schemas
 const GasDataSchema = z.array(z.object({
     formulaGas: z.string(),
     latSensor: z.number(),
@@ -37,6 +42,7 @@ const GasTypeSchema = z.array(z.object({
     formulaGas: z.string(),
 }));
 
+// Interface Definitions
 interface User {
     name: string;
     cityAgency: string;
@@ -53,34 +59,51 @@ interface Sensor {
     city: string;
 }
 
+// Mobiscroll Options
+setOptions({
+    locale: localeFr,
+    theme: 'ios',
+    themeVariant: 'light'
+});
+
 // Initialization API
 Radar.initialize(import.meta.env.VITE_RADAR);
 
 const App: React.FC = () => {
+    // User related states
     const [user, setUser] = useState<User | null>(null);
+    const [role, setRole] = useState<string | null>(null);
+    const [admins, setAdmins] = useState([]);
+
+    // Report related states
     const [reports, setReports] = useState<Report[]>([]);
+    const [titleReport, setTitleReport] = useState("");
+
+    // Sensor related states
     const [sensors, setSensors] = useState<Sensor[]>([]);
+    const [selectedGas, setSelectedGas] = useState("");
+    const [formulaGas, setFormulaGas] = useState("");
+    const [address, setAddress] = useState("");
+
+    // Data related states
+    const [dataAgency, setDataAgency] = useState([]);
+    const [dataGas, setDataGas] = useState([]);
+    const [dataDate, setData] = useState("");
+    const [index, setIndex] = useState<number | null>(null);
+
+    // Other states
     const { t } = useTranslation();
     const [gasTypes, setGasTypes] = useState<string[]>([]);
-    const [dataAgency, setDataAgency] = useState([]);
-    const [admins, setAdmins] = useState([]);
-    const [selectedGas, setSelectedGas] = useState("");
     const [selectedCoWriters, setSelectedCoWriters] = useState<string[]>([]);
-    const [address, setAddress] = useState("");
-    const [formulaGas, setFormulaGas] = useState("");
-    const [dataDate, setData] = useState("");
     const [sector, setSector] = useState("");
     const [successMessage, setSuccessMessage] = useState("Sensor added successfully");
     const [isFormComplete, setFormComplete] = useState(false);
-    const [dataGas, setDataGas] = useState([]);
-    const [index, setIndex] = useState<number | null>(null);
-    const access_token = localStorage.getItem('access_token');
-    const [titleReport, setTitleReport] = useState("");
     const [title, setTitle] = useState("AIR DATA HUB");
-    const [role, setRole] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState(false);
     const [sectors, setSectors] = useState<string[]>([]);
 
+    // Local storage
+    const access_token = localStorage.getItem('access_token');
     const resetForm = () => {
         setAddress("");
         setFormulaGas("");
@@ -92,11 +115,13 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchUser = async () => {
             const access_token = localStorage.getItem('access_token');
+
             if (!access_token) {
                 window.location.href = '/login';
                 return;
             }
 
+            // Fetch user data from the API
             const response = await fetch('/api/info', {
                 method: 'GET',
                 headers: {
@@ -104,23 +129,23 @@ const App: React.FC = () => {
                 },
             });
 
+            // If the response is not ok, throw an error
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
 
-            console.log(data.latAgency, data.longAgency);
-
             let city = '';
+
             try {
-                // @ts-ignore
+                // Use Radar API to reverse geocode the latitude and longitude
                 const result = await Radar.reverseGeocode({ latitude: data.latAgency, longitude: data.longAgency });
                 const { addresses } = result;
-                city = addresses[0]?.city || '';
 
+                city = addresses[0]?.city || '';
             } catch (err) {
-                // handle error
+                console.error(err);
             }
 
             const user = {
@@ -128,6 +153,7 @@ const App: React.FC = () => {
                 cityAgency: city,
             };
 
+            // Update the user and role state variables
             setUser(user);
             setRole(data.role);
         };
@@ -136,13 +162,17 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchReportData = async () => {
+            // Retrieve the access token from local storage
             const access_token = localStorage.getItem('access_token');
+
+            // If there's no access token, redirect to the login page
             if (!access_token) {
                 window.location.href = '/login';
                 return;
             }
 
+            // Fetch report data from the API
             const response = await fetch('/api/report', {
                 method: 'GET',
                 headers: {
@@ -156,40 +186,51 @@ const App: React.FC = () => {
 
             const data = await response.json();
 
+            // Map the data to an array of report values
             const reportsValue = data.map((item: { titleReport: string; dateReport: string }) => ({ title: item.titleReport, date: item.dateReport }));
+
             setReports(reportsValue);
         };
 
-        fetchUser();
+        fetchReportData();
     }, []);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        // Prevent the default form submission behavior
         event.preventDefault();
 
-        // Get latitude and longitude from Radar
+        // Initialize latitude and longitude variables
         let lat, long;
+
+        // Use the OpenStreetMap API to geocode the address
         await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
             .then(response => response.json())
             .then(data => {
+                // If there are results, set the latitude and longitude
                 if (data.length > 0) {
                     const result = data[0];
                     lat = result.lat;
                     long = result.lon;
                 } else {
+                    // If there are no results, throw an error
                     throw new Error('No results found');
                 }
             })
             .catch(err => {
-                // handle error
+                // Handle any errors that occur during geocoding
+                console.error(err);
             });
 
-        // Make POST request to /api/add-sensor
+        // Retrieve the access token from local storage
         const access_token = localStorage.getItem('access_token');
+
+        // If there's no access token, redirect to the login page
         if (!access_token) {
             window.location.href = '/login';
             return;
         }
 
+        // Make a POST request to the /api/add-sensor endpoint
         const response = await fetch('/api/add-sensor', {
             method: 'POST',
             headers: {
@@ -201,7 +242,6 @@ const App: React.FC = () => {
                 longSensor: long,
                 formulaGas: formulaGas,
                 idSector: sector,
-
             })
         });
 
@@ -211,10 +251,15 @@ const App: React.FC = () => {
 
         const data = await response.json();
 
+        // If the sensor was added successfully
         if (data.message === 'Sensor added successfully') {
             resetForm();
+
             setSuccessMessage('Sensor added successfully');
+
             let city = '';
+
+            // Use the Radar API to reverse geocode the latitude and longitude
             await Radar.reverseGeocode({ latitude: lat, longitude: long })
                 .then((result) => {
                     const { addresses } = result;
@@ -227,31 +272,38 @@ const App: React.FC = () => {
                     }
                 })
                 .catch((err) => {
-                    // handle error
+                    // Handle any errors that occur during reverse geocoding
+                    console.error(err);
                 });
-
 
             // Add the new sensor to the sensors state
             setSensors(prevSensors => [{ name: data.newSensor.nameGas, city: city, id: data.newSensor.idSensor }, ...prevSensors]);
+
+            // Show the success message
             setIsVisible(true);
+
+            // After 3 seconds, hide the success message and reload the page
             setTimeout(() => {
                 setIsVisible(false);
                 window.location.reload();
             }, 3000);
-
-
         }
     }
 
     const handleSubmitReport = async (event: React.FormEvent<HTMLFormElement>) => {
+        // Prevent the default form submission behavior
         event.preventDefault();
 
+        // Retrieve the access token from local storage
         const access_token = localStorage.getItem('access_token');
+
+        // If there's no access token, redirect to the login page
         if (!access_token) {
             window.location.href = '/login';
             return;
         }
 
+        // Make a POST request to the /api/add-report endpoint
         const response = await fetch('/api/add-report', {
             method: 'POST',
             headers: {
@@ -265,20 +317,28 @@ const App: React.FC = () => {
             })
         });
 
+        // If the response is not ok, log the form data and throw an error
         if (!response.ok) {
             console.log(selectedCoWriters, dataDate, titleReport);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Parse the response data as JSON
         const data = await response.json();
 
+        // If the report was added successfully
         if (data.message === 'Report added successfully') {
             resetForm();
+
             setSuccessMessage('Report added successfully');
 
+            // Add the new report to the reports state
             setReports(prevReports => [...prevReports, { title: titleReport, date: dataDate }]);
 
+            // Show the success message
             setIsVisible(true);
+
+            // After 5 seconds, hide the success message
             setTimeout(() => {
                 setIsVisible(false);
             }, 5000);
@@ -286,11 +346,16 @@ const App: React.FC = () => {
     }
 
     const fetchSensors = async () => {
+        // Retrieve the access token from local storage
+        const access_token = localStorage.getItem('access_token');
+
+        // If there's no access token, redirect to the login page
         if (!access_token) {
             window.location.href = '/login';
             return;
         }
 
+        // Fetch sensor data from the API
         const response = await fetch('/api/sensors', {
             method: 'GET',
             headers: {
@@ -298,16 +363,20 @@ const App: React.FC = () => {
             },
         });
 
+        // If the response is not ok, throw an error
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Parse the response data as JSON
         const data = await response.json();
 
-        // Create an array to hold all the promises
+        // Map the data to an array of promises for reverse geocoding
         const promises = data.map(async (item: { latSensor: any; longSensor: any; nameGas: any; idSensor: any; }) => {
+            // Initialize city variable
             let city = '';
 
+            // Use the Radar API to reverse geocode the latitude and longitude
             await Radar.reverseGeocode({ latitude: item.latSensor, longitude: item.longSensor })
                 .then((result) => {
                     const { addresses } = result;
@@ -320,7 +389,8 @@ const App: React.FC = () => {
                     }
                 })
                 .catch((err) => {
-                    // handle error
+                    // Handle any errors that occur during reverse geocoding
+                    console.error(err);
                 });
 
             // Return the new sensor object
@@ -330,7 +400,7 @@ const App: React.FC = () => {
         // Wait for all promises to resolve
         const newSensors = await Promise.all(promises);
 
-        // Update the sensors state once with the new array
+        // Update the sensors state with the new array
         setSensors(newSensors);
     };
 
@@ -338,7 +408,9 @@ const App: React.FC = () => {
         fetchSensors();
     }, []);
 
+    // Fetch gas types
     useEffect(() => {
+       // Define an asynchronous function to fetch gas types
         const fetchGasTypes = async () => {
             try {
                 const response = await fetch('/api/gasTypes', {
@@ -349,30 +421,27 @@ const App: React.FC = () => {
                 });
 
                 if (!response.ok) {
-                    console.error('Network response was not ok');
-                    return;
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
+
                 // Validate the data using the GasTypeSchema
                 const validatedData = GasTypeSchema.parse(data);
+
                 // Map the validated data to an array of gas types
                 const gasTypes = validatedData.map((item: {formulaGas: string}) => item.formulaGas);
 
                 setGasTypes(gasTypes);
             } catch (error) {
-                if (error instanceof z.ZodError) {
-                    console.error('Validation error:', error.errors);
-                } else {
-                    console.error('Error fetching gas types:', error);
-                }
+                console.error('Error fetching gas types:', error);
             }
         };
 
-        fetchGasTypes().catch(error => console.error('Error in fetchGasTypes:', error));
+        fetchGasTypes();
     }, []);
 
-    //get Sectors and add in sectors useState with request get /api/sectors
+    // Fetch sectors
     useEffect(() => {
         const fetchSectors = async () => {
             try {
@@ -384,28 +453,22 @@ const App: React.FC = () => {
                 });
 
                 if (!response.ok) {
-                    console.error('Network response was not ok');
-                    return;
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-
                 const sectors = data.map((item: {nameSector: number}) => item.nameSector);
 
                 setSectors(sectors);
             } catch (error) {
-                if (error instanceof z.ZodError) {
-                    console.error('Validation error:', error.errors);
-                } else {
-                    console.error('Error fetching gas types:', error);
-                }
+                console.error('Error fetching sectors:', error);
             }
         };
 
-        fetchSectors().catch(error => console.error('Error in fetchGasTypes:', error));
+        fetchSectors();
     }, []);
 
-    //Get the data in agency to add in the select option of the form with request get /api/data-in-agency
+    // Fetch admins in agency and data in agency
     useEffect(() => {
         const fetchAdminsInAgency = async () => {
             try {
@@ -417,22 +480,16 @@ const App: React.FC = () => {
                 });
 
                 if (!response.ok) {
-                    console.error('Network response was not ok');
-                    return;
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-
                 const fullName = data.map((item: {firstName: string, lastName: string}) => [item.firstName, item.lastName]);
                 const name = fullName.map((item: string[]) => item.join(" "));
 
                 setAdmins(name);
             } catch (error) {
-                if (error instanceof z.ZodError) {
-                    console.error('Validation error:', error.errors);
-                } else {
-                    console.error('Error fetching gas types:', error);
-                }
+                console.error('Error fetching admins in agency:', error);
             }
         };
 
@@ -446,28 +503,22 @@ const App: React.FC = () => {
                 });
 
                 if (!response.ok) {
-                    console.error('Network response was not ok');
-                    return;
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-
                 const dateData = data.map((item: {dateData: string}) => item.dateData);
                 const gasData = data.map((item: {formulaGas: string}) => item.formulaGas);
 
                 setDataAgency(dateData);
                 setDataGas(gasData);
             } catch (error) {
-                if (error instanceof z.ZodError) {
-                    console.error('Validation error:', error.errors);
-                } else {
-                    console.error('Error fetching gas types:', error);
-                }
+                console.error('Error fetching data in agency:', error);
             }
         };
 
-        fetchAdminsInAgency().catch(error => console.error('Error in fetchGasTypes:', error));
-        fetchDataInAgency().catch(error => console.error('Error in fetchGasTypes:', error));
+        fetchAdminsInAgency();
+        fetchDataInAgency();
     }, []);
 
     return (
@@ -479,11 +530,12 @@ const App: React.FC = () => {
                 <UserInfo>
                     {user ? (
                         <><Title>{user.name}</Title><City>{user.cityAgency.toUpperCase()}</City></>
-                        ) : (
+                    ) : (
                         <p>Loading...</p>
                     )}
                 </UserInfo>
-                {role === 'technician' && (
+
+                {role === 'technician' ? (
                     <Form onSubmit={handleSubmit}>
                         <Elements>
                             <InputComponent type="text" name="address" placeholder={t("Address")} value={address}
@@ -538,9 +590,7 @@ const App: React.FC = () => {
                         </Submit>
 
                     </Form>
-                )}
-
-                {role === 'writer' && (
+                ) : (
                     <Form onSubmit={handleSubmitReport}>
                         <Elements>
                             <InputComponent
@@ -584,136 +634,26 @@ const App: React.FC = () => {
                             <input type="submit" value={t("Add")}/>
                         </Submit>
                     </Form>
-
-                )}
-
-                {role === 'writer' && (
-                    <InnerDiv>
-                        <Input
-                            inputStyle={"outline inputComponent1" as any}
-                            type="text"
-                            name="titleReport"
-                            placeholder={index === null ? t("Need to select Data...") : t("Enter") + " " + dataGas[index] + " " + t("Report")}
-                            onChange={(e: {
-                                target: { value: React.SetStateAction<string>; };
-                            }) => setTitleReport(e.target.value)}
-                            disabled={index === null}
-                        />
-                        <Select
-                            data={[{ text: t('Data'), value: '', disabled: true }, ...dataAgency]}
-                            inputStyle={"outline inputComponent2" as any}
-                            touchUi={false}
-                            dropdown={false}
-                            placeholder="Select Data..."
-                            onChange={(event) => {
-                                const selectedValue = event.value;
-                                const selectedIndex = dataAgency.findIndex(item => item === selectedValue);
-                                setIndex(selectedIndex);
-                                setData(selectedValue);
-                            }}
-                            cssClass="selectorD"
-                        />
-                        <Select
-                            data={[{ text: t('Co-Writers'), value: '', disabled: true },...admins.map(admin => removeAccents(admin))]}
-                            inputStyle={"outline inputComponent3" as any}
-                            touchUi={false}
-                            dropdown={false}
-                            placeholder="Select Co-Writers..."
-                            selectMultiple={true}
-                            labelStyle="stacked"
-                            cssClass="selectorD"
-                            onChange={(event) => setSelectedCoWriters(event.value)}
-                        />
-                        <Submit>
-                            <input type="submit" value={t("Add")}/>
-                        </Submit>
-                    </InnerDiv>
-                )}
-
-                {role === 'technician' && (
-                    <form onSubmit={handleSubmit}>
-                        <InnerDiv>
-                            <Input
-                                value={address}
-                                inputStyle={"outline inputComponent1" as any}
-                                type="text"
-                                name="titleReport"
-                                placeholder="Address"
-                                onChange={(e: {
-                                    target: { value: React.SetStateAction<string>; };
-                                }) => setAddress(e.target.value)}
-                            />
-                            <Select
-                                name="formulaGas"
-                                value={formulaGas}
-                                onChange={(event) => setFormulaGas(event.value)}
-                                data={[
-                                    { text: t('Gases'), value: '', disabled: true },
-                                    ...gasTypes.map(gasType => {
-                                        let displayValue = gasType;
-
-                                        if (gasType === "CO2 non bio") {
-                                            displayValue = "CO2nb";
-                                        } else if (gasType === "CO2 bio") {
-                                            displayValue = "CO2b";
-                                        }
-
-                                        return { text: displayValue, value: displayValue };
-                                    })
-                                ]}
-                                touchUi={false}
-                                dropdown={false}
-                                inputStyle={"outline inputComponent2" as any}
-                                cssClass="selectorD"
-                                placeholder="Gas"
-                            />
-                            <Select
-                                name="sector"
-                                value={sector}
-                                data={[
-                                    { text: t('Sectors'), value: '', disabled: true },
-                                    ...sectors.map((gasType, index) => {
-                                        let displayValue = t(gasType);
-                                        return { text: displayValue, value: index };
-                                    })
-                                ]}
-                                touchUi={false}
-                                inputStyle={"outline inputComponent3" as any}
-                                placeholder="Sector"
-                                dropdown={false}
-                                cssClass="selectorD"
-                                onChange={(event) => setSector(event.value)}
-                            />
-                            <Submit>
-                                <input type="submit" value={t("Add")}/>
-                            </Submit>
-                        </InnerDiv>
-                    </form>
                 )}
 
                 {<Success className={isVisible ? 'fadeOut' : ''}>{successMessage}</Success>}
 
-
                 <Reports>
-                    {
-                        reports.map((report, index) => (
-                            <Component key={index}>
-                                <TruncatedText>{removeAccents(report.title)}</TruncatedText>
-                                <p>{removeAccents(report.date)}</p>
-                            </Component>
-                        ))
-                    }
+                    {reports.map((report, index) => (
+                        <Component key={index}>
+                            <TruncatedText>{removeAccents(report.title)}</TruncatedText>
+                            <p>{removeAccents(report.date)}</p>
+                        </Component>
+                    ))}
 
-                    {
-                        sensors.map((sensor, index) => (
-                            <Component>
-                                <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
-                                    <TruncatedText>{sensor.city}</TruncatedText>
-                                    <p>{t(sensor.name)}</p>
-                                </a>
-                            </Component>
-                        ))
-                    }
+                    {sensors.map((sensor, index) => (
+                        <Component>
+                            <a href={`/sensor/${sensor.id}`} key={index} style={{textDecoration: 'none'}}>
+                                <TruncatedText>{sensor.city}</TruncatedText>
+                                <p>{t(sensor.name)}</p>
+                            </a>
+                        </Component>
+                    ))}
                 </Reports>
             </Container>
         </>
@@ -734,6 +674,29 @@ const renderApp = () => {
 
 document.addEventListener('DOMContentLoaded', renderApp);
 
+// Global styles
+const GlobalStyles = createGlobalStyle`
+    .inputComponent1,
+    .inputComponent2,
+    .inputComponent3,
+    .selector,
+    .selectorData {
+        border-width: 1.5px !important;
+        border-color: #dcdcdc !important;
+        margin: 0 !important;
+        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
+    }
+    // ... rest of the styles
+`;
+
+// Layout components
+const Container = styled.div`
+    height: 100%;
+    background-color: #fffffe;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+`
 const InnerDiv = styled.div`
     display: flex;
     flex-direction: column;
@@ -746,115 +709,7 @@ const InnerDiv = styled.div`
     }
 `;
 
-const TruncatedText = styled.h2`
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 800px;
-
-    @media (min-width: 1100px) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 600px;
-    }
-`;
-
-const GlobalStyles = createGlobalStyle`
-    .inputComponent1,
-    .inputComponent2,
-    .inputComponent3,
-    .selector,
-    .selectorData {
-        border-width: 1.5px !important;
-        border-color: #dcdcdc !important;
-        margin: 0 !important;
-        font-family: 'FoundersGrotesk-Regular', sans-serif !important;
-    }
-
-    .inputComponent1,
-    .inputComponent2,
-    .inputComponent3 {
-        width: 25rem !important;
-
-        @media (max-width: 450px) {
-            width: 89vw !important;
-        }
-    }
-
-    .inputComponent1 {
-        border-bottom: none !important;
-        border-radius: 7px 7px 0 0 !important;
-    }
-
-    .inputComponent2 {
-        border-bottom: none !important;
-        border-radius: 0 !important;
-    }
-
-    .inputComponent3 {
-        border-radius: 0 0 7px 7px !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-    }
-
-    .selector,
-    .selectorData {
-        display: block !important;
-        border-radius: 7px !important;
-        background-color: #fffffe !important;
-        font-size: 1rem !important;
-        color: #020204 !important;
-        max-height: 10rem !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-
-        :hover {
-            cursor: pointer;
-        }
-    }
-
-    .selector {
-        max-width: 10rem !important;
-    }
-
-    .selectorData {
-        width: 7rem !important;
-        height: 2.9rem !important;
-        max-width: 7rem !important;
-    }
-
-    .mbsc-ios.mbsc-textfield-wrapper-box,
-    .mbsc-ios.mbsc-textfield-wrapper-outline {
-        margin: 0;
-    }
-
-    @keyframes fadeOut {
-        0% { opacity: 0; }
-        5% { opacity: 1}
-        60% { opacity: 1; }
-        100% { opacity: 0; }
-    }
-
-    .fadeOut {
-        animation-name: fadeOut;
-        animation-duration: 5s;
-        animation-fill-mode: forwards;
-    }
-`;
-
-const Elements = styled.div`
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    justify-content: center;
-
-    @media (max-width: 450px) {
-        flex-direction: column;
-    }
-`
-
+// Form components
 const Form = styled.form`
     display: flex;
     justify-content: center;
@@ -869,68 +724,6 @@ const Form = styled.form`
         display: none;
     }
 `
-
-const Selects = styled.div`
-    display: flex;
-    gap: 1rem;
-`
-
-const Redirection = styled.a`
-    text-decoration: none;
-`
-
-const Success = styled.p`
-    color: #0f0e17;
-    opacity: 0;
-    font-family: 'FoundersGrotesk-Regular', sans-serif;
-    text-align: center;
-`
-
-const Reports = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    /*width: 100%;*/
-    margin: 30px;
-    margin-top: 60px;
-
-    @media (min-width: 900px) {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-between;
-    }
-`
-
-const Submit = styled.div`
-    input {
-        margin: 1rem 0;
-        padding: .72rem 1.7rem;
-        border-radius: 7px;
-        border: #dcdcdc 1.5px solid;
-        background-color: '#f9f9f9';
-        color: #0f0e17;
-        font-family: 'FoundersGrotesk-Medium', sans-serif;
-        transition: background-color 0.3s, color 0.3s;
-        font-size: 1.1rem;
-
-        &:hover {
-            cursor: pointer;
-            outline: none;
-            background-color: #dcdcdc;
-        }
-
-        @media (max-width: 650px) {
-            width: 25rem;
-        }
-
-        @media (max-width: 450px) {
-            width: 89vw;
-        }
-    }
-`;
-
-
 const InputComponent = styled.input`
     padding: 1rem;
     height: 2.9rem;
@@ -959,7 +752,6 @@ const InputComponent = styled.input`
         font-size: 1rem;
     }
 `;
-
 const Selector = styled.select `
     border-radius: 7px;
     border: 1.5px solid #dcdcdc;
@@ -976,7 +768,50 @@ const Selector = styled.select `
         font-size: 1rem;
     }
 `
+const Submit = styled.div`
+    input {
+        margin: 1rem 0;
+        padding: .72rem 1.7rem;
+        border-radius: 7px;
+        border: #dcdcdc 1.5px solid;
+        background-color: '#f9f9f9';
+        color: #0f0e17;
+        font-family: 'FoundersGrotesk-Medium', sans-serif;
+        transition: background-color 0.3s, color 0.3s;
+        font-size: 1.1rem;
 
+        &:hover {
+            cursor: pointer;
+            outline: none;
+            background-color: #dcdcdc;
+        }
+
+        @media (max-width: 650px) {
+            width: 25rem;
+        }
+
+        @media (max-width: 450px) {
+            width: 89vw;
+        }
+    }
+`;
+
+// Report components
+const Reports = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /*width: 100%;*/
+    margin: 30px;
+    margin-top: 60px;
+
+    @media (min-width: 900px) {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+`
 const Component = styled.div`
     background-color: #f9f9f9;
     border: #dcdcdc 1.5px solid;
@@ -994,17 +829,6 @@ const Component = styled.div`
         width: 90vw;
     }
 
-   /* @media (max-width: 768px) {
-        margin: 30px auto;
-        width: 500px;
-    }
-
-    @media (max-width: 550px) {
-        width: 90vw;
-    }*/
-
-
-
     h2 {
         color: #0f0e17;
         font-family: 'FoundersGrotesk-Light', sans-serif;
@@ -1016,14 +840,7 @@ const Component = styled.div`
     }
 `
 
-const Container = styled.div`
-    height: 100%;
-    background-color: #fffffe;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-`
-
+// User info components
 const UserInfo = styled.div`
     margin: 110px 30px 30px;
     font-family: 'FoundersGrotesk-Regular', sans-serif;
@@ -1032,15 +849,50 @@ const UserInfo = styled.div`
         margin: 110px 20px 30px;
     }
 `;
-
 const Title = styled.p`
     font-size: 2rem;
     color: #0f0e17;
     font-family: 'FoundersGrotesk-Medium', sans-serif;
 `;
-
 const City = styled.p`
     font-size: 1.2rem;
     color: #2e2f3e;
     font-family: 'FoundersGrotesk-Regular', sans-serif;
 `;
+
+// Other components
+const TruncatedText = styled.h2`
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 800px;
+
+    @media (min-width: 1100px) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 600px;
+    }
+`;
+const Success = styled.p`
+    color: #0f0e17;
+    opacity: 0;
+    font-family: 'FoundersGrotesk-Regular', sans-serif;
+    text-align: center;
+`
+const Elements = styled.div`
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+
+    @media (max-width: 450px) {
+        flex-direction: column;
+    }
+`
+const Selects = styled.div`
+    display: flex;
+    gap: 1rem;
+`
+const Redirection = styled.a`
+    text-decoration: none;
+`

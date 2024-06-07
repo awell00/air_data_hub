@@ -2,23 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-use PhpParser\Node\Attribute;
-use Illuminate\Database\Eloquent\Casts\Attribute as CastsAttribute;
 
+// Define a new model class for User
 class User extends Authenticatable
 {
+    // Use traits for API tokens, factory, and notifications
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    // Define the attributes that are mass assignable
     protected $fillable = [
         'firstName',
         'lastName',
@@ -28,33 +23,25 @@ class User extends Authenticatable
         'personnel_id'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
+    // Define the attributes that should be hidden for serialization
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    // Define the attributes that should be cast to native types
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'role' => 'string',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    // Get the attributes that should be cast to native types
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-
         ];
     }
 }
